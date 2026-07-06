@@ -51,7 +51,7 @@ func initFeatures(ctx context.Context) (
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
-		Password: "",
+		Password: "my_pres_redis123",
 		DB:       0,
 		Protocol: 2,
 	})

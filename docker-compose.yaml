@@ -21,6 +21,8 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
 
   postgres-migrate:
     image: migrate/migrate:v4.19.1
