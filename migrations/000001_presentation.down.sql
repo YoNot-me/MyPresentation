@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS works;
+DROP TABLE IF EXISTS brands;
+DROP SCHEMA IF EXISTS presentation;

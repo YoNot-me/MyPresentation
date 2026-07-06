@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auth</title>
+  <link rel="stylesheet" href="/auth/auth.css">
+</head>
+<body>
+  <main class="page">
+    <form id="auth-form" class="auth" autocomplete="off">
+      <h1 class="title">Авторизация</h1>
+
+      <label class="field">
+        <span class="label">Логин</span>
+        <input id="login" name="login" type="text" required autocomplete="username" spellcheck="false" />
+      </label>
+
+      <label class="field">
+        <span class="label">Пароль</span>
+        <input id="password" name="password" type="password" required autocomplete="current-password" />
+      </label>
+
+      <p id="message" class="message" aria-live="polite"></p>
+
+      <button type="submit" class="submit">Отправить</button>
+    </form>
+  </main>
+
+  <script>
+    const form = document.getElementById('auth-form');
+    const loginInput = document.getElementById('login');
+    const passwordInput = document.getElementById('password');
+    const message = document.getElementById('message');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const login = loginInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!login || !password) {
+        message.textContent = 'Заполните логин и пароль.';
+        return;
+      }
+
+      message.textContent = 'Отправка...';
+
+      try {
+        const response = await fetch(`/auth/${encodeURIComponent(login)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ password }),
+        });
+
+        if (response.ok || response.redirected) {
+          window.location.assign(`/get/${encodeURIComponent(login)}`);
+          return;
+        }
+
+        if (response.status === 401) {
+          message.textContent = 'Неверный логин или пароль.';
+          return;
+        }
+
+        message.textContent = `Ошибка авторизации: ${response.status}`;
+      } catch (error) {
+        message.textContent = 'Не удалось отправить запрос.';
+      }
+    });
+  </script>
+</body>
+</html>
