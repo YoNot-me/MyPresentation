@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Презентация</title>
+  <link rel="stylesheet" href="/static/presentation/gallery.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="hero__copy">
+        <p class="eyebrow">Презентация</p>
+        <h1 id="title" class="title">Presentation</h1>
+        <p id="subtitle" class="subtitle">Загрузка файлов...</p>
+      </div>
+      <a id="back" class="back" href="/works/serve">Назад</a>
+    </header>
+
+    <section class="stream" id="stream" aria-live="polite"></section>
+  </main>
+
+  <dialog id="lightbox" class="lightbox">
+    <button id="close-lightbox" class="lightbox__close" type="button" aria-label="Закрыть">×</button>
+    <img id="lightbox-image" alt="">
+  </dialog>
+
+  <script>
+    // Shared presentation viewer. Guest mode (?work=) lists slides from
+    // /works/files/:name and serves them from /presentation/:name/<file>.
+    // Admin mode (?brand=&work=) uses the admin routes instead, so the same
+    // page works from both the guest list and the admin panel.
+    const params = new URLSearchParams(window.location.search);
+    const workName = params.get('work') || '';
+    const brand = params.get('brand') || '';
+    const isAdmin = brand !== '';
+
+    const listURL = isAdmin
+      ? `/admin/${encodeURIComponent(brand)}/files/${encodeURIComponent(workName)}`
+      : `/works/files/${encodeURIComponent(workName)}`;
+    const fileBase = isAdmin
+      ? `/admin/${encodeURIComponent(brand)}/serve/${encodeURIComponent(workName)}/`
+      : `/presentation/${encodeURIComponent(workName)}/`;
+
+    const title = document.getElementById('title');
+    const subtitle = document.getElementById('subtitle');
+    const stream = document.getElementById('stream');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.getElementById('lightbox-image');
+    const closeLightbox = document.getElementById('close-lightbox');
+    const back = document.getElementById('back');
+
+    title.textContent = workName || 'Presentation';
+    back.href = isAdmin
+      ? `/admin/panel/works.html?brand=${encodeURIComponent(brand)}`
+      : '/works/serve';
+
+    function openLightbox(src, alt) {
+      lightboxImage.src = src;
+      lightboxImage.alt = alt;
+      if (typeof lightbox.showModal === 'function') {
+        lightbox.showModal();
+      } else {
+        lightbox.setAttribute('open', '');
+      }
+    }
+
+    function closeModal() {
+      if (lightbox.open) {
+        lightbox.close();
+      } else {
+        lightbox.removeAttribute('open');
+      }
+      lightboxImage.src = '';
+      lightboxImage.alt = '';
+    }
+
+    closeLightbox.addEventListener('click', closeModal);
+    lightbox.addEventListener('click', (event) => {
+      if (event.target === lightbox) closeModal();
+    });
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && lightbox.open) closeModal();
+    });
+
+    function renderSlide(src, name, index) {
+      const slide = document.createElement('article');
+      slide.className = 'slide';
+      slide.id = `slide-${index + 1}`;
+
+      const frame = document.createElement('div');
+      frame.className = 'frame';
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'media';
+
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = name;
+      img.loading = index < 2 ? 'eager' : 'lazy';
+      img.decoding = 'async';
+
+      button.appendChild(img);
+      button.addEventListener('click', () => openLightbox(src, name));
+      frame.appendChild(button);
+      slide.appendChild(frame);
+      return slide;
+    }
+
+    (async () => {
+      if (!workName) {
+        subtitle.textContent = 'Работа не указана.';
+        return;
+      }
+      try {
+        const res = await fetch(listURL, {
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json' },
+        });
+
+        if (res.status === 401 || res.redirected) {
+          window.location.href = isAdmin ? '/admin/panel/brands.html' : '/auth';
+          return;
+        }
+        if (!res.ok) {
+          subtitle.textContent = `Не удалось загрузить список файлов: ${res.status}`;
+          return;
+        }
+
+        const files = await res.json();
+        if (!Array.isArray(files) || files.length === 0) {
+          subtitle.textContent = 'Файлов нет.';
+          return;
+        }
+
+        subtitle.textContent = `${files.length} файлов`;
+        stream.innerHTML = '';
+        files.forEach((name, index) => {
+          stream.appendChild(renderSlide(fileBase + encodeURIComponent(name), name, index));
+        });
+      } catch (error) {
+        subtitle.textContent = 'Не удалось открыть презентацию.';
+      }
+    })();
+  </script>
+</body>
+</html>

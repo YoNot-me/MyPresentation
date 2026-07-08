@@ -69,22 +69,29 @@ func route(
 	r.Use(gin.Recovery())
 	r.Use(middleware.MaximumSize())
 
+	//basic
+	r.Handle(http.MethodGet, "/", func(c *gin.Context) {
+
+	})
+
 	//auth
 	r.Handle(http.MethodGet, "/auth", auth.Auth)
 	r.Static("/auth", "./public/auth")
 
 	r.Handle(http.MethodPost, "/auth/check", auth.AuthBrand)
-	r.Handle(http.MethodPost, "/logout", auth.Logout)
 
 	r.Handle(http.MethodPost, "/admin/auth", admin.AuthAdmin)
+	r.Handle(http.MethodPost, "/logout/admin", admin.LogOut)
 
 	//fileserving
 	protect := r.Group("")
 	protect.Use(middleware.Protected(jwt))
 	protect.Handle(http.MethodGet, "/works", fileServing.ListWorkFiles)
+	protect.Handle(http.MethodGet, "/works/files/:name", fileServing.ListWorkImages)
 	protect.Handle(http.MethodGet, "/presentation/:name/*filepath", fileServing.GetWork)
 
 	protect.Handle(http.MethodGet, "/works/serve", fileServing.ServeHTML)
+
 	r.Static("/static/presentation", "./public/presentation")
 
 	//admin
@@ -93,15 +100,18 @@ func route(
 
 	protectAdmin.Handle(http.MethodGet, "/brands", admin.ListBrands)
 	protectAdmin.Handle(http.MethodPost, "/brands/add", admin.AddNewBrand)
+	protectAdmin.Handle(http.MethodPut, "/:brandName/rename", admin.RenameBrand)
 	protectAdmin.Handle(http.MethodDelete, "/:brandName", admin.DeleteBrand)
 	protectAdmin.Handle(http.MethodPut, "/:brandName/password", admin.ChangeBrandPassword)
 
 	protectAdmin.Handle(http.MethodGet, "/:brandName/works", admin.ListAllBrandWorks)
-	protectAdmin.Handle(http.MethodPost, "/:brandName/:workName/add", admin.AddNewWork)
+	protectAdmin.Handle(http.MethodPost, "/:brandName/works/add", admin.AddNewWork)
 	protectAdmin.Handle(http.MethodDelete, "/:brandName/remove/:workName", admin.DeleteWork)
 	protectAdmin.Handle(http.MethodPut, "/:brandName/:workName/change", admin.ChangeWorkFields)
 
+	protectAdmin.Handle(http.MethodGet, "/:brandName/files/:workName", admin.ListWorkImages)
 	protectAdmin.Handle(http.MethodGet, "/:brandName/serve/:workName/*filepath", admin.ServingWork)
+	protectAdmin.Static("/panel", "./public/admin")
 
 	return r
 }

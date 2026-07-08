@@ -9,14 +9,16 @@ import (
 )
 
 type ServingTrasnport interface {
-	ServeHTML(c *gin.Context)     // GET 	/works
-	ListWorkFiles(c *gin.Context) // GET 	/works/files.json
-	GetWork(c *gin.Context)       // GET 	/presentation/:name/*filepath
+	ServeHTML(c *gin.Context)      // GET 	/works/serve
+	ListWorkFiles(c *gin.Context)  // GET 	/works
+	ListWorkImages(c *gin.Context) // GET 	/works/files/:name
+	GetWork(c *gin.Context)        // GET 	/presentation/:name/*filepath
 }
 
 type ServingSrv interface {
 	GetName(c *gin.Context) (string, error)
 	GetBrandWorks(ctx context.Context, brandName string) ([]entity.Works, error)
+	GetWorkImages(brandName, workName string) ([]string, error)
 }
 
 type FileServingTransport struct {

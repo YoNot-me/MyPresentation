@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Авторизация</title>
+    <title>Вход админ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500&display=swap"
@@ -18,18 +18,18 @@
       <form
         class="auth-card"
         id="loginForm"
-        data-endpoint="/auth/check"
-        data-redirect="/works/serve"
-        data-user-field="name"
+        data-endpoint="/admin/auth"
+        data-redirect="/admin/panel/brands.html"
+        data-user-field="login"
         novalidate
       >
-        <h1 class="auth-title">Вход</h1>
+        <h1 class="auth-title">Вход админ</h1>
 
         <div class="fields">
           <input
             class="field"
             id="userField"
-            name="name"
+            name="login"
             placeholder="Название бренда"
             autocomplete="username"
             required

@@ -45,18 +45,18 @@ func (j *ServingJWT) CreateToken(ctx context.Context, brandName, ip, role string
 		},
 	}
 
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, customClaims).SignedString([]byte(j.env.JWTKey))
+	newToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, customClaims).SignedString([]byte(j.env.JWTKey))
 	if err != nil {
 		j.log.Error("failed to create token: "+ip+" "+brandName, zap.Error(err))
 		return "", err
 	}
 
-	if err = j.rdb.Set(ctx, ip, token, 12*time.Hour).Err(); err != nil {
+	if err = j.rdb.Set(ctx, ip, newToken, 12*time.Hour).Err(); err != nil {
 		j.log.Error("failed to store token: "+ip+" "+brandName, zap.Error(err))
 		return "", err
 	}
 
-	return token, nil
+	return newToken, nil
 }
 
 func (j *ServingJWT) CheckAccess(token *jwt.Token, ip string) bool {
@@ -114,6 +114,7 @@ func (j *ServingJWT) RetryDeleteToken(ip string) error {
 
 		err := j.rdb.Del(ctx, ip).Err()
 		if err == nil {
+			j.log.Info("token deleted: " + ip)
 			return nil
 		}
 

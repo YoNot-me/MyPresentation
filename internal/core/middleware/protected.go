@@ -12,21 +12,21 @@ func ProtectedAdmin(j *JWT.ServingJWT) gin.HandlerFunc {
 
 		cookie, err := c.Cookie("Pres-Access")
 		if err != nil {
-			c.Redirect(http.StatusSeeOther, "/admin/auth")
+			c.Redirect(http.StatusSeeOther, "/auth/admin.html")
 			c.Abort()
 			return
 		}
 
 		token, ok := j.ValidateToken(cookie)
 		if !ok {
-			c.Redirect(http.StatusSeeOther, "/admin/auth")
+			c.Redirect(http.StatusSeeOther, "/auth/admin.html")
 			c.Abort()
 			return
 		}
 
 		ok = j.CheckAdminAccess(token, c.ClientIP(), "admin")
 		if !ok {
-			c.Redirect(http.StatusSeeOther, "/admin/auth")
+			c.Redirect(http.StatusSeeOther, "/auth/admin.html")
 			c.Abort()
 			return
 		}

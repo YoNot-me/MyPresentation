@@ -3,130 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Presentation</title>
-  <link rel="stylesheet" href="/presentation/gallery.css">
+  <title>Работы</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/presentation/style.css">
 </head>
 <body>
-  <main class="shell">
-    <header class="hero">
-      <div class="hero__copy">
-        <p class="eyebrow">Работа</p>
-        <h1 id="title" class="title">Presentation</h1>
-        <p id="subtitle" class="subtitle">Загрузка файлов...</p>
-      </div>
-      <a class="back" href="/auth">Выйти</a>
-    </header>
+  <header class="topbar">
+    <span>Все работы</span>
+    <span>by Yo</span>
+  </header>
 
-    <section class="stream" id="stream" aria-live="polite"></section>
-  </main>
+  <div class="page-head">
+    <h1 id="brandTitle" class="ghost-title">Название бренда</h1>
+    <h2 class="section-title">Работы</h2>
+  </div>
 
-  <dialog id="lightbox" class="lightbox">
-    <button id="close-lightbox" class="lightbox__close" type="button" aria-label="Закрыть">×</button>
-    <img id="lightbox-image" alt="">
-  </dialog>
+  <section id="grid" class="grid" hidden></section>
 
-  <script>
-    const parts = window.location.pathname.split('/').filter(Boolean);
-    const workName = decodeURIComponent(parts[1] || '');
-    const title = document.getElementById('title');
-    const subtitle = document.getElementById('subtitle');
-    const stream = document.getElementById('stream');
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImage = document.getElementById('lightbox-image');
-    const closeLightbox = document.getElementById('close-lightbox');
-    const basePath = `/get/${encodeURIComponent(workName)}`;
+  <section id="emptyState" class="empty-card">
+    <div id="emptyInner" class="empty-inner">Загрузка...</div>
+  </section>
 
-    title.textContent = workName || 'Presentation';
-
-    const imageKinds = new Set(['image']);
-
-    function openLightbox(src, alt) {
-      lightboxImage.src = src;
-      lightboxImage.alt = alt;
-      if (typeof lightbox.showModal === 'function') {
-        lightbox.showModal();
-      } else {
-        lightbox.setAttribute('open', '');
-      }
-    }
-
-    function closeModal() {
-      if (lightbox.open) {
-        lightbox.close();
-      } else {
-        lightbox.removeAttribute('open');
-      }
-      lightboxImage.src = '';
-      lightboxImage.alt = '';
-    }
-
-    closeLightbox.addEventListener('click', closeModal);
-    lightbox.addEventListener('click', (event) => {
-      if (event.target === lightbox) {
-        closeModal();
-      }
-    });
-    window.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && lightbox.open) {
-        closeModal();
-      }
-    });
-
-    function renderSlide(file, index) {
-      const slide = document.createElement('article');
-      slide.className = 'slide';
-      slide.id = `slide-${index + 1}`;
-
-      const frame = document.createElement('div');
-      frame.className = 'frame';
-
-      if (imageKinds.has(file.kind)) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'media';
-
-        const img = document.createElement('img');
-        img.src = file.url;
-        img.alt = file.name;
-        img.loading = index < 2 ? 'eager' : 'lazy';
-        img.decoding = 'async';
-
-        button.appendChild(img);
-        button.addEventListener('click', () => openLightbox(file.url, file.name));
-        frame.appendChild(button);
-      }
-
-      slide.appendChild(frame);
-      return slide;
-    }
-
-    (async () => {
-      try {
-        const res = await fetch(`${basePath}/files.json`, {
-          headers: { 'Accept': 'application/json' },
-        });
-
-        if (!res.ok) {
-          subtitle.textContent = `Не удалось загрузить список файлов: ${res.status}`;
-          return;
-        }
-
-        const files = await res.json();
-        if (!Array.isArray(files) || files.length === 0) {
-          subtitle.textContent = 'Файлов нет.';
-          return;
-        }
-
-        subtitle.textContent = `${files.length} файлов`;
-        stream.innerHTML = '';
-
-        files.forEach((file, index) => {
-          stream.appendChild(renderSlide(file, index));
-        });
-      } catch (error) {
-        subtitle.textContent = 'Не удалось открыть презентацию.';
-      }
-    })();
-  </script>
+  <script src="/static/presentation/app.js"></script>
 </body>
 </html>

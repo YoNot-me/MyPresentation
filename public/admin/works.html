@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Админ — Работы</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+          href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500&display=swap"
+          rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/admin/panel/style.css" />
+</head>
+<body>
+<div class="brandmark">by Yo</div>
+<button class="logout" id="logoutBtn" type="button">Выйти</button>
+
+<div class="page-ghost">Админ</div>
+
+<div class="works-head">
+  <h1 id="worksHeading">Название Бренда / Работы</h1>
+  <button class="btn-outline" id="addWorkBtn" type="button">
+    + Добавить работу
+  </button>
+  <button class="btn-outline" id="renameBrandBtn">
+    Редактировать название бренда
+  </button>
+</div>
+
+<main class="grid" id="grid"></main>
+<p class="state-msg" id="stateMsg">Загрузка…</p>
+
+<!-- hidden input reused for cover uploads -->
+<input type="file" id="coverInput" accept="image/*" hidden />
+
+<!-- модалка добавления работы -->
+<div class="modal-overlay" id="addWorkOverlay" hidden>
+  <div class="modal">
+    <h2 class="modal-title">Новая работа</h2>
+    <p class="modal-sub" id="addWorkBrandLabel"></p>
+    <div class="modal-fields">
+      <input
+              class="field"
+              id="newWorkName"
+              placeholder="Название работы"
+              autocomplete="off"
+      />
+      <input
+              class="field"
+              id="newWorkUrl"
+              placeholder="Ссылка на диск"
+              autocomplete="off"
+      />
+      <textarea
+              class="field field-textarea"
+              id="newWorkDesc"
+              placeholder="Описание"
+      ></textarea>
+      <label class="file-field" id="newWorkPreviewLabel">
+        <span id="newWorkPreviewText">Загрузить превью</span>
+        <input
+                type="file"
+                id="newWorkPreview"
+                accept="image/*"
+                hidden
+        />
+      </label>
+      <label class="file-field" id="newWorkFilesLabel">
+        <span id="newWorkFilesText">Загрузить файлы работы (до 50)</span>
+        <input
+                type="file"
+                id="newWorkFiles"
+                accept="image/*"
+                multiple
+                hidden
+        />
+      </label>
+    </div>
+    <p class="modal-error" id="addWorkError"></p>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="addWorkCancel" type="button">
+        Отмена
+      </button>
+      <button class="btn-pill" id="addWorkSubmit" type="button">
+        Добавить
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/admin/panel/app.js" data-page="works"></script>
+</body>
+</html>

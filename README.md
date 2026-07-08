@@ -123,16 +123,17 @@ CREATE INDEX work_name_idx ON works(workName);
 
 ### Маршруты администратора (требуют JWT админа, префикс `/admin`)
 
-| Метод | Путь | Описание |
-|-------|------|----------|
-| `GET`    | `/admin/brands` | Список всех брендов |
-| `POST`   | `/admin/brands/add` | Создать бренд |
-| `DELETE` | `/admin/:brandName` | Удалить бренд |
-| `PUT`    | `/admin/:brandName/password` | Сменить пароль бренда |
-| `GET`    | `/admin/:brandName/works` | Список works бренда |
-| `POST`   | `/admin/:brandName/:workName/add` | Добавить work |
-| `DELETE` | `/admin/:brandName/remove/:workName` | Удалить work |
-| `PUT`    | `/admin/:brandName/:workName/change` | Изменить поля work |
+| Метод    | Путь | Описание                            |
+|----------|------|-------------------------------------|
+| `GET`    | `/admin/brands` | Список всех брендов                 |
+| `POST`   | `/admin/brands/add` | Создать бренд                       |
+| `PUT`    | `/:brandName/rename` | Переименовать бренд                 |
+| `DELETE` | `/admin/:brandName` | Удалить бренд                       |
+| `PUT`    | `/admin/:brandName/password` | Сменить пароль бренда               |
+| `GET`    | `/admin/:brandName/works` | Список works бренда                 |
+| `POST`   | `/admin/:brandName/:workName/add` | Добавить work                       |
+| `DELETE` | `/admin/:brandName/remove/:workName` | Удалить work                        |
+| `PUT`    | `/admin/:brandName/:workName/change` | Изменить поля work                  |
 | `GET`    | `/admin/:brandName/serve/:workName/*filepath` | Раздача файлов work от имени админа |
 
 ---
