@@ -79,7 +79,9 @@ func route(
 	r.Static("/auth", "./public/auth")
 
 	r.Handle(http.MethodPost, "/auth/check", auth.AuthBrand)
+	r.Handle(http.MethodPost, "/logout", auth.Logout)
 
+	r.Handle(http.MethodGet, "/admin", admin.MainAdmin)
 	r.Handle(http.MethodPost, "/admin/auth", admin.AuthAdmin)
 	r.Handle(http.MethodPost, "/logout/admin", admin.LogOut)
 

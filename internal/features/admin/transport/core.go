@@ -9,6 +9,7 @@ import (
 )
 
 type AdminTrnsprt interface {
+	MainAdmin(c *gin.Context) // REDIRECT	to	auth/admin.html
 	AuthAdmin(c *gin.Context) // POST			admin/auth
 	LogOut(c *gin.Context)    // POST			admin/logout
 
