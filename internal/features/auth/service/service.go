@@ -58,7 +58,13 @@ func (a *AuthService) CheckData(ctx context.Context, data entity.Brand, ip strin
 
 	if ok := a.jwt.IsExist(ctx, ip); !ok {
 		a.log.Error("token already exists")
-		return entity.AlreadySigned
+		err := a.jwt.LogOut(ctx, ip)
+		if err != nil {
+			a.log.Error("failed to logout", zap.Error(err))
+			return err
+		}
+
+		return nil
 	}
 
 	return nil

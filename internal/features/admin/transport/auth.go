@@ -10,6 +10,10 @@ import (
 	"go.uber.org/zap"
 )
 
+func (a *AdminTransport) MainAdmin(c *gin.Context) {
+	c.Redirect(http.StatusFound, "auth/admin.html")
+}
+
 func (a *AdminTransport) AuthAdmin(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
