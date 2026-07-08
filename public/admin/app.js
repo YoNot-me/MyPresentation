@@ -278,11 +278,15 @@
   }
 
   // Send a partial update to PUT /admin/:brand/:work/change.
-  // The server expects a multipart form with a JSON "data" field and an
-  // optional "preview" file — FormData produces exactly that.
+  // The server expects a multipart form with an optional JSON "data" field and
+  // an optional "preview" file — FormData produces exactly that. When only the
+  // cover is replaced (no field changes) we omit "data" entirely, so the server
+  // sees an empty PostForm("data") and skips the needless DB update.
   async function changeWork(brand, work, fields, file) {
     const fd = new FormData();
-    fd.append("data", JSON.stringify(fields || {}));
+    if (fields && Object.keys(fields).length > 0) {
+      fd.append("data", JSON.stringify(fields));
+    }
     if (file) fd.append("preview", file);
 
     const url =
@@ -380,8 +384,13 @@
         const card = document.createElement("article");
         card.className = "work-card";
 
-        const thumb = document.createElement("div");
+        const thumb = document.createElement("a");
         thumb.className = "thumb";
+        thumb.href =
+            "/static/presentation/view.html?brand=" +
+            encodeURIComponent(brand) +
+            "&work=" +
+            encodeURIComponent(name || "");
         const src = previewURL(brand, work);
         if (src) {
           const img = document.createElement("img");
@@ -446,6 +455,26 @@
     }
 
     load();
+  }
+
+  // Logout button (present on every admin page). POST /logout/admin clears the
+  // admin session server-side; we then send the user to the admin login page
+  // regardless of the POST result so the panel is never left half-open.
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async function () {
+      logoutBtn.disabled = true;
+      try {
+        await fetch("/logout/admin", {
+          method: "POST",
+          credentials: "same-origin",
+        });
+      } catch (e) {
+        /* ignore — redirect to login regardless */
+      } finally {
+        window.location.href = "/auth/admin.html";
+      }
+    });
   }
 
   if (page === "brands") initBrands();

@@ -1,75 +1,55 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Auth</title>
-  <link rel="stylesheet" href="/auth/auth.css">
-</head>
-<body>
-  <main class="page">
-    <form id="auth-form" class="auth" autocomplete="off">
-      <h1 class="title">Авторизация</h1>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Авторизация</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/auth/style.css" />
+  </head>
+  <body>
+    <div class="brandmark">by Yo</div>
 
-      <label class="field">
-        <span class="label">Логин</span>
-        <input id="login" name="login" type="text" required autocomplete="username" spellcheck="false" />
-      </label>
+    <main class="auth-wrap">
+      <form
+        class="auth-card"
+        id="loginForm"
+        data-endpoint="/auth/check"
+        data-redirect="/works/serve"
+        data-user-field="name"
+        novalidate
+      >
+        <h1 class="auth-title">Вход</h1>
 
-      <label class="field">
-        <span class="label">Пароль</span>
-        <input id="password" name="password" type="password" required autocomplete="current-password" />
-      </label>
+        <div class="fields">
+          <input
+            class="field"
+            id="userField"
+            name="name"
+            placeholder="Название бренда"
+            autocomplete="username"
+            required
+          />
+          <input
+            class="field"
+            name="password"
+            type="password"
+            placeholder="Пароль"
+            autocomplete="current-password"
+            required
+          />
+        </div>
 
-      <p id="message" class="message" aria-live="polite"></p>
+        <p class="form-error" id="formError"></p>
 
-      <button type="submit" class="submit">Отправить</button>
-    </form>
-  </main>
+        <button class="btn-pill" type="submit">Войти</button>
+      </form>
+    </main>
 
-  <script>
-    const form = document.getElementById('auth-form');
-    const loginInput = document.getElementById('login');
-    const passwordInput = document.getElementById('password');
-    const message = document.getElementById('message');
-
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-
-      const login = loginInput.value.trim();
-      const password = passwordInput.value;
-
-      if (!login || !password) {
-        message.textContent = 'Заполните логин и пароль.';
-        return;
-      }
-
-      message.textContent = 'Отправка...';
-
-      try {
-        const response = await fetch(`/auth/${encodeURIComponent(login)}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ password }),
-        });
-
-        if (response.ok || response.redirected) {
-          window.location.assign(`/get/${encodeURIComponent(login)}`);
-          return;
-        }
-
-        if (response.status === 401) {
-          message.textContent = 'Неверный логин или пароль.';
-          return;
-        }
-
-        message.textContent = `Ошибка авторизации: ${response.status}`;
-      } catch (error) {
-        message.textContent = 'Не удалось отправить запрос.';
-      }
-    });
-  </script>
-</body>
+    <script src="/auth/auth.js"></script>
+  </body>
 </html>

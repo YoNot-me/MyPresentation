@@ -43,6 +43,15 @@
       // The server answers with a 3xx redirect on success (cookie is set),
       // which fetch follows to a JSON endpoint — we don't need its body.
       if (res.ok || res.redirected) {
+        // Remember the brand name so the works page can show it as the title —
+        // the server filters works by the cookie and never returns the name.
+        if (userField === "name") {
+          try {
+            localStorage.setItem("brandName", user);
+          } catch (e) {
+            /* storage unavailable — the title just falls back to a placeholder */
+          }
+        }
         window.location.href = redirect;
         return;
       }

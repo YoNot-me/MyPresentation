@@ -144,7 +144,7 @@ func (ar *AdminRepo) AddNewWork(ctx context.Context, req *entity.Works) error {
 
 	const query = `
 		INSERT INTO works (brand, workName, url, description)
-		VALUES ($1, $2, NULLIF($3, ''), NULLIF($4, ''))
+		VALUES ($1, $2, $3, $4)
 	`
 
 	res, err := ar.db.Exec(ctx, query,

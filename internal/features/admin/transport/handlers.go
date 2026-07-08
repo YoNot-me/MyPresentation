@@ -230,24 +230,7 @@ func (a *AdminTransport) ChangeWorkFields(c *gin.Context) {
 	brandName := filepath.Clean(c.Param("brandName"))
 	workName := filepath.Clean(c.Param("workName"))
 
-	rawJSON := c.PostForm("data")
-	if rawJSON == "" {
-		response(c, entity.Response{Err: entity.BadRequest})
-		return
-	}
-
-	req := entity.Works{}
-	err := json.Unmarshal([]byte(rawJSON), &req)
-	if err != nil {
-		a.log.Error("Bad request", zap.Error(err))
-		response(c, entity.Response{
-			Status: http.StatusBadRequest,
-			Err:    entity.BadRequest,
-		})
-		return
-	}
-
-	err = a.srv.ChangeWorkFields(ctx, brandName, workName, &req, c)
+	err := a.srv.ChangeWorkFields(ctx, brandName, workName, c)
 	if err != nil {
 		a.log.Error("Cant change work fields", zap.Error(err))
 		response(c, entity.Response{
@@ -259,6 +242,26 @@ func (a *AdminTransport) ChangeWorkFields(c *gin.Context) {
 	const path = "/admin/%s/works"
 	query := fmt.Sprintf(path, brandName)
 	c.Redirect(http.StatusSeeOther, query)
+}
+
+func (a *AdminTransport) ListWorkImages(c *gin.Context) {
+
+	brandName := filepath.Clean(c.Param("brandName"))
+	workName := filepath.Clean(c.Param("workName"))
+
+	files, err := a.srv.GetWorkImages(brandName, workName)
+	if err != nil {
+		a.log.Error("Err list work images", zap.Error(err))
+		response(c, entity.Response{
+			Err: err,
+		})
+		return
+	}
+
+	response(c, entity.Response{
+		Status: http.StatusOK,
+		Data:   files,
+	})
 }
 
 func (a *AdminTransport) ServingWork(c *gin.Context) {

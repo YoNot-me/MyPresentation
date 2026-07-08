@@ -23,7 +23,8 @@ type AdminTrnsprt interface {
 	DeleteWork(c *gin.Context)        // DELETE 		admin/:brandName/:workName
 	ChangeWorkFields(c *gin.Context)  // PUT JSON 	admin/:brandName/:workName/change
 
-	ServingWork(c *gin.Context) // GET 	JSON 	admin/:brandName/:workName
+	ServingWork(c *gin.Context)    // GET 			admin/:brandName/serve/:workName/*filepath
+	ListWorkImages(c *gin.Context) // GET 	JSON 	admin/:brandName/files/:workName
 }
 
 type AdminService interface {
@@ -39,8 +40,9 @@ type AdminService interface {
 	AddNewWork(ctx context.Context, brandName string, req *entity.Works, c *gin.Context) (int, error)
 	ListAllWorks(ctx context.Context, brandName string) ([]entity.WorksResponse, error)
 	DeleteWork(ctx context.Context, brandName, workName string) error
-	ChangeWorkFields(ctx context.Context, brandName, workName string, work *entity.Works, c *gin.Context) error
+	ChangeWorkFields(ctx context.Context, brandName, workName string, c *gin.Context) error
 	RenameFolders(brandName, workName string, newWorkName string) error
+	GetWorkImages(brandName, workName string) ([]string, error)
 }
 
 type AdminTransport struct {

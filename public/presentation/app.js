@@ -6,26 +6,30 @@
   const emptyState = document.getElementById("emptyState");
   const emptyInner = document.getElementById("emptyInner");
 
-  // The `preview` column has no json tag on the server, so it may arrive as
-  // either "Preview" or "preview" — accept both.
-  function previewOf(work) {
-    return work.Preview || work.preview || "";
+  // The API filters works by the login cookie and never returns the brand name,
+  // so show the name the user logged in with (saved by auth.js). This works
+  // even when the brand has no works yet.
+  try {
+    const savedBrand = localStorage.getItem("brandName");
+    if (savedBrand) brandTitle.textContent = savedBrand;
+  } catch (e) {
+    /* storage unavailable — keep the placeholder title */
   }
 
-  // Stored preview looks like "works/<brand>/<work>/preview/preview.png".
-  // The brand-facing file route is /presentation/<work_name>/<rel>, so we only
-  // need the file name and rebuild a safe URL from it.
+  // The cover lives in works/<brand>/<work>/preview/. The brand file route
+  // /presentation/<work>/preview resolves that single-file folder to the image
+  // itself, so we don't need to know its name or extension.
   function previewURL(work) {
-    const stored = previewOf(work);
-    if (!stored) return "";
-    const parts = stored.split("/").filter(Boolean);
-    const file = parts[parts.length - 1];
-    if (!file) return "";
+    if (!work.work_name) return "";
+    return "/presentation/" + encodeURIComponent(work.work_name) + "/preview";
+  }
+
+  // Opens the presentation viewer for a work (guest mode — brand comes from the
+  // Pres-Access cookie server-side).
+  function viewerURL(work) {
     return (
-      "/presentation/" +
-      encodeURIComponent(work.work_name) +
-      "/preview/" +
-      encodeURIComponent(file)
+      "/static/presentation/view.html?work=" +
+      encodeURIComponent(work.work_name || "")
     );
   }
 
@@ -53,8 +57,9 @@
       const card = document.createElement("article");
       card.className = "work-card";
 
-      const thumb = document.createElement("div");
+      const thumb = document.createElement("a");
       thumb.className = "thumb";
+      thumb.href = viewerURL(work);
       const src = previewURL(work);
       if (src) {
         const img = document.createElement("img");

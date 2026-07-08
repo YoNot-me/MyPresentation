@@ -4,6 +4,8 @@ import (
 	"context"
 	"presentator/internal/core/entity"
 	"presentator/internal/features/auth/token"
+
+	"go.uber.org/zap"
 )
 
 type AdminRepository interface {
@@ -21,13 +23,15 @@ type AdminRepository interface {
 }
 
 type AdminService struct {
+	log *zap.Logger
 	rep AdminRepository
 	jwt *JWT.ServingJWT
 }
 
-func NewAdminService(rep AdminRepository, jwt *JWT.ServingJWT) *AdminService {
+func NewAdminService(log *zap.Logger, rep AdminRepository, jwt *JWT.ServingJWT) *AdminService {
 
 	return &AdminService{
+		log: log,
 		rep: rep,
 		jwt: jwt,
 	}

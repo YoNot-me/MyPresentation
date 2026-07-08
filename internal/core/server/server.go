@@ -87,6 +87,7 @@ func route(
 	protect := r.Group("")
 	protect.Use(middleware.Protected(jwt))
 	protect.Handle(http.MethodGet, "/works", fileServing.ListWorkFiles)
+	protect.Handle(http.MethodGet, "/works/files/:name", fileServing.ListWorkImages)
 	protect.Handle(http.MethodGet, "/presentation/:name/*filepath", fileServing.GetWork)
 
 	protect.Handle(http.MethodGet, "/works/serve", fileServing.ServeHTML)
@@ -108,6 +109,7 @@ func route(
 	protectAdmin.Handle(http.MethodDelete, "/:brandName/remove/:workName", admin.DeleteWork)
 	protectAdmin.Handle(http.MethodPut, "/:brandName/:workName/change", admin.ChangeWorkFields)
 
+	protectAdmin.Handle(http.MethodGet, "/:brandName/files/:workName", admin.ListWorkImages)
 	protectAdmin.Handle(http.MethodGet, "/:brandName/serve/:workName/*filepath", admin.ServingWork)
 	protectAdmin.Static("/panel", "./public/admin")
 

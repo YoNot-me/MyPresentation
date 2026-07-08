@@ -35,6 +35,24 @@ body {
   z-index: 10;
 }
 
+.logout {
+  position: fixed;
+  top: 22px;
+  left: 32px;
+  z-index: 10;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.logout:hover {
+  opacity: 0.6;
+}
+
 .page-ghost {
   text-align: center;
   font-size: 40px;

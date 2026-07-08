@@ -100,15 +100,15 @@ func initServices(
 	jwtService := JWT.NewServingJWT(rdb, env, log)
 
 	authRepo := authRepository.NewAuthRepo(db)
-	authSrv := authService.NewAuthService(jwtService, authRepo)
+	authSrv := authService.NewAuthService(log, jwtService, authRepo)
 	authTrans := authTransport.NewAuthTransport(jwtService, log, authSrv)
 
 	adminRepo := adminRepository.NewAdminRepo(db)
-	adminSrv := adminService.NewAdminService(adminRepo, jwtService)
+	adminSrv := adminService.NewAdminService(log, adminRepo, jwtService)
 	adminTrans := adminTransport.NewAdminTransport(log, adminSrv)
 
 	fileservingRepo := fileservingRepository.NewServingRepo(db)
-	fileServiceSrv := fileservingService.NewServingService(jwtService, fileservingRepo)
+	fileServiceSrv := fileservingService.NewServingService(log, jwtService, fileservingRepo)
 	fileServingTrans := fileservingTransport.NewServingTransport(fileServiceSrv, log)
 
 	return fileServingTrans, adminTrans, authTrans, jwtService
