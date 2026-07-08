@@ -2,9 +2,7 @@ package adminTransport
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"path/filepath"
 	"presentator/internal/core/entity"
 	"time"
 
@@ -44,8 +42,8 @@ func (a *AdminTransport) AuthAdmin(c *gin.Context) {
 		true,
 	)
 
-	path := fmt.Sprintf("/%s", filepath.Join("admin", "brands"))
-	c.Redirect(http.StatusFound, path)
+	a.log.Info("Admin logged in", zap.String("IP: ", c.ClientIP()))
+	c.Redirect(http.StatusFound, "admin/brands")
 }
 
 func (a *AdminTransport) LogOut(c *gin.Context) {
@@ -60,5 +58,6 @@ func (a *AdminTransport) LogOut(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, "/admin")
+	a.log.Info("Admin logged out", zap.String("IP: ", c.ClientIP()))
+	c.Redirect(http.StatusSeeOther, "/admin/auth")
 }

@@ -22,7 +22,6 @@ type Works struct {
 	Brand       string `json:"brand" db:"brand"`
 	WorkName    string `json:"work_name" db:"workName"`
 	Url         string `json:"url" db:"url"`
-	Preview     string `db:"preview"`
 	Description string `json:"description" db:"description"`
 }
 
@@ -39,6 +38,5 @@ type BrandsResponse struct {
 type WorksResponse struct {
 	WorkName    string `json:"work_name" db:"workName"`
 	Url         string `json:"url" db:"url"`
-	Preview     string `db:"preview"`
 	Description string `json:"description" db:"description"`
 }

@@ -69,14 +69,19 @@ func route(
 	r.Use(gin.Recovery())
 	r.Use(middleware.MaximumSize())
 
+	//basic
+	r.Handle(http.MethodGet, "/", func(c *gin.Context) {
+
+	})
+
 	//auth
 	r.Handle(http.MethodGet, "/auth", auth.Auth)
 	r.Static("/auth", "./public/auth")
 
 	r.Handle(http.MethodPost, "/auth/check", auth.AuthBrand)
-	r.Handle(http.MethodPost, "/logout", auth.Logout)
 
 	r.Handle(http.MethodPost, "/admin/auth", admin.AuthAdmin)
+	r.Handle(http.MethodPost, "/logout/admin", admin.LogOut)
 
 	//fileserving
 	protect := r.Group("")
@@ -85,6 +90,7 @@ func route(
 	protect.Handle(http.MethodGet, "/presentation/:name/*filepath", fileServing.GetWork)
 
 	protect.Handle(http.MethodGet, "/works/serve", fileServing.ServeHTML)
+
 	r.Static("/static/presentation", "./public/presentation")
 
 	//admin
@@ -103,6 +109,7 @@ func route(
 	protectAdmin.Handle(http.MethodPut, "/:brandName/:workName/change", admin.ChangeWorkFields)
 
 	protectAdmin.Handle(http.MethodGet, "/:brandName/serve/:workName/*filepath", admin.ServingWork)
+	protectAdmin.Static("/panel", "./public/admin")
 
 	return r
 }

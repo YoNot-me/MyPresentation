@@ -144,18 +144,18 @@ func (s *AdminService) ListAllWorks(ctx context.Context, brandName string) ([]en
 	return work, nil
 }
 
-func (s *AdminService) AddNewWork(ctx context.Context, req *entity.Works, c *gin.Context) (int, error) {
+func (s *AdminService) AddNewWork(ctx context.Context, brandName string, req *entity.Works, c *gin.Context) (int, error) {
 
-	if req.Brand == "" || req.WorkName == "" {
+	if brandName == "" || req.WorkName == "" {
 		return 0, entity.BadRequest
 	}
 
-	dir := filepath.Join(dst, req.Brand, req.WorkName)
+	dir := filepath.Join(dst, brandName, req.WorkName)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return 0, err
 	}
 
-	previewDir := filepath.Join(dst, req.Brand, req.WorkName, "preview")
+	previewDir := filepath.Join(dst, brandName, req.WorkName, "preview")
 	if err := os.MkdirAll(previewDir, 0755); err != nil {
 		return 0, err
 	}
@@ -165,7 +165,7 @@ func (s *AdminService) AddNewWork(ctx context.Context, req *entity.Works, c *gin
 		return 0, err
 	}
 
-	if previewFiles := form.File["preview"]; len(previewFiles) > 0 {
+	if previewFiles := form.File["preview"]; len(previewFiles) > 0 && len(previewFiles) < 50 {
 		previewFile := previewFiles[0]
 
 		ext := strings.ToLower(filepath.Ext(previewFile.Filename))
@@ -174,8 +174,9 @@ func (s *AdminService) AddNewWork(ctx context.Context, req *entity.Works, c *gin
 			previewName := "preview" + ext
 			previewPath := filepath.Join(previewDir, previewName)
 
-			_ = c.SaveUploadedFile(previewFile, previewPath)
-			req.Preview = previewPath
+			if err = c.SaveUploadedFile(previewFile, previewPath); err != nil {
+				return 0, err
+			}
 		}
 	}
 
@@ -201,6 +202,7 @@ func (s *AdminService) AddNewWork(ctx context.Context, req *entity.Works, c *gin
 	if count == 0 {
 		return 0, entity.BadRequest
 	}
+	req.Brand = brandName
 
 	if err = s.rep.AddNewWork(ctx, req); err != nil {
 		_ = s.DeleteWork(ctx, req.Brand, req.WorkName)
@@ -279,7 +281,6 @@ func (s *AdminService) ChangeWorkFields(
 			previewPath := filepath.Join(previewDir, previewName)
 
 			_ = c.SaveUploadedFile(previewFile, previewPath)
-			newInfo.Preview = previewPath
 		}
 	}
 

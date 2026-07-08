@@ -1,0 +1,16 @@
+[
+  {
+    "brand": "Бренд 1",
+    "work_name": "Работа1",
+    "url": "https://disk.example.com/work1",
+    "Preview": "works/Бренд 1/Работа1/preview/preview.png",
+    "description": "Описание описание Описание описание Описание описание Описание описание Описание"
+  },
+  {
+    "brand": "Бренд 1",
+    "work_name": "Работа2",
+    "url": "https://disk.example.com/work2",
+    "Preview": "works/Бренд 1/Работа2/preview/preview.jpg",
+    "description": "Описание описание Описание описание Описание описание Описание описание Описание"
+  }
+]

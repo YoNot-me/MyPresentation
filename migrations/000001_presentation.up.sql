@@ -11,7 +11,6 @@ CREATE TABLE works (
     workName            VARCHAR(256)    NOT NULL,
     url                 TEXT            NOT NULL DEFAULT '',
     description         TEXT            NOT NULL DEFAULT '',
-    preview             TEXT            NOT NULL DEFAULT '',
 
     CONSTRAINT presentation_work FOREIGN KEY (brand) REFERENCES brands(name)
         ON DELETE CASCADE

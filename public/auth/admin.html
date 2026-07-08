@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Вход админ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/auth/style.css" />
+  </head>
+  <body>
+    <div class="brandmark">by Yo</div>
+
+    <main class="auth-wrap">
+      <form
+        class="auth-card"
+        id="loginForm"
+        data-endpoint="/admin/auth"
+        data-redirect="/admin/panel/brands.html"
+        data-user-field="login"
+        novalidate
+      >
+        <h1 class="auth-title">Вход админ</h1>
+
+        <div class="fields">
+          <input
+            class="field"
+            id="userField"
+            name="login"
+            placeholder="Название бренда"
+            autocomplete="username"
+            required
+          />
+          <input
+            class="field"
+            name="password"
+            type="password"
+            placeholder="Пароль"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+
+        <p class="form-error" id="formError"></p>
+
+        <button class="btn-pill" type="submit">Войти</button>
+      </form>
+    </main>
+
+    <script src="/auth/auth.js"></script>
+  </body>
+</html>

@@ -1,0 +1,136 @@
+:root {
+  --bg: #f4f4f5;
+  --card: #ffffff;
+  --text: #121212;
+  --muted: #9b9b9b;
+  --field: #f4f4f5;
+  --border: rgba(0, 0, 0, 0.08);
+  --radius: 20px;
+  --pill: 999px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: "Golos Text", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.brandmark {
+  position: fixed;
+  top: 22px;
+  right: 32px;
+  font-size: 15px;
+  color: var(--text);
+  z-index: 10;
+}
+
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 880px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 48px 64px 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.auth-title {
+  font-size: 26px;
+  font-weight: 500;
+  margin-bottom: 56px;
+}
+
+.fields {
+  width: 100%;
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field {
+  width: 100%;
+  height: 64px;
+  border: none;
+  outline: none;
+  background: var(--field);
+  border-radius: var(--pill);
+  padding: 0 32px;
+  font: inherit;
+  font-size: 17px;
+  color: var(--text);
+  transition: box-shadow 0.15s ease;
+}
+
+.field::placeholder {
+  color: var(--muted);
+}
+
+.field:focus {
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.12) inset;
+}
+
+.form-error {
+  min-height: 20px;
+  margin-top: 16px;
+  color: #d43a3a;
+  font-size: 14px;
+  text-align: center;
+}
+
+.btn-pill {
+  margin-top: 24px;
+  min-width: 190px;
+  height: 58px;
+  border: 1px solid var(--text);
+  background: var(--card);
+  border-radius: var(--pill);
+  font: inherit;
+  font-size: 17px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-pill:hover {
+  background: var(--text);
+  color: #fff;
+}
+
+.btn-pill:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 640px) {
+  .auth-card {
+    padding: 36px 24px 40px;
+  }
+  .auth-title {
+    margin-bottom: 36px;
+  }
+}

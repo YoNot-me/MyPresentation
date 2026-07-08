@@ -32,7 +32,7 @@ func (t *AuthTransport) AuthBrand(c *gin.Context) {
 
 	token, err := t.s.AuthUser(ctx, data, c.ClientIP())
 	if err != nil {
-		
+
 		if errors.Is(err, entity.AlreadySigned) {
 			c.Redirect(http.StatusSeeOther, "/works")
 			return
@@ -58,7 +58,7 @@ func (t *AuthTransport) AuthBrand(c *gin.Context) {
 		true,
 	)
 
-	c.Redirect(http.StatusSeeOther, "/works")
+	c.Redirect(http.StatusSeeOther, "/works/serve")
 }
 
 func (t *AuthTransport) Logout(c *gin.Context) {

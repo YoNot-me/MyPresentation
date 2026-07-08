@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"presentator/internal/core/entity"
 	"time"
@@ -179,15 +180,10 @@ func (a *AdminTransport) AddNewWork(c *gin.Context) {
 		response(c, entity.Response{Err: entity.BadRequest})
 		return
 	}
-	if req.Brand != filepath.Clean(c.Param("brandName")) {
-		a.log.Error("Brand name not match", zap.String("brand", req.Brand), zap.String("param", c.Param("brandName")))
-		response(c, entity.Response{
-			Status: http.StatusBadRequest,
-		})
-		return
-	}
 
-	count, err := a.srv.AddNewWork(ctx, &req, c)
+	brandName := filepath.Clean(c.Param("brandName"))
+
+	count, err := a.srv.AddNewWork(ctx, brandName, &req, c)
 	if err != nil {
 		a.log.Error("Err add new work", zap.Error(err))
 		response(c, entity.Response{
@@ -269,11 +265,19 @@ func (a *AdminTransport) ServingWork(c *gin.Context) {
 
 	brandName := filepath.Clean(c.Param("brandName"))
 	workName := filepath.Clean(c.Param("workName"))
+	relPath := filepath.Clean(c.Param("filepath"))
 
 	const dst = "./works"
-	dir := fmt.Sprintf("%s/%s/%s", dst, brandName, workName)
-	prefix := fmt.Sprintf("/admin/%s/serve/%s", brandName, workName)
+	fullPath := filepath.Join(dst, brandName, workName, relPath)
 
-	fs := http.StripPrefix(prefix, http.FileServer(http.Dir(dir)))
-	fs.ServeHTTP(c.Writer, c.Request)
+	if info, err := os.Stat(fullPath); err == nil && info.IsDir() {
+		entries, err := os.ReadDir(fullPath)
+		if err != nil || len(entries) != 1 || entries[0].IsDir() {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		fullPath = filepath.Join(fullPath, entries[0].Name())
+	}
+
+	c.File(fullPath)
 }

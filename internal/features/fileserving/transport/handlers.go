@@ -13,7 +13,13 @@ import (
 )
 
 func (t *FileServingTransport) ServeHTML(c *gin.Context) {
-	http.StripPrefix("/public/presentation/", http.FileServer(http.Dir("./works")))
+	c.File("./public/presentation/index.html")
+}
+
+func (t *FileServingTransport) Basic(c *gin.Context) {
+
+	t.log.Info("New Guest: ", zap.String("IP: ", c.ClientIP()))
+	c.Redirect(http.StatusSeeOther, "/auth")
 }
 
 func (t *FileServingTransport) ListWorkFiles(c *gin.Context) {
