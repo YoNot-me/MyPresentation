@@ -12,7 +12,7 @@ type ServingRepo interface {
 }
 
 type ServingService struct {
-	db  *fileservingRepository.ServingRepo
+	db  ServingRepo
 	jwt *JWT.ServingJWT
 }
 

@@ -9,12 +9,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/goccy/go-json"
 	"go.uber.org/zap"
 )
 
 func (a *AdminTransport) ListBrands(c *gin.Context) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 4*time.Second)
 	defer cancel()
 
 	brands, err := a.srv.ListAllBrands(ctx)
@@ -34,7 +35,7 @@ func (a *AdminTransport) ListBrands(c *gin.Context) {
 
 func (a *AdminTransport) AddNewBrand(c *gin.Context) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 8*time.Second)
 	defer cancel()
 
 	req := entity.Brand{}
@@ -60,9 +61,39 @@ func (a *AdminTransport) AddNewBrand(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, query)
 }
 
+func (a *AdminTransport) RenameBrand(c *gin.Context) {
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 8*time.Second)
+	defer cancel()
+
+	req := entity.Brand{}
+
+	if err := c.BindJSON(&req); err != nil {
+		a.log.Error("Bad request from: "+c.ClientIP(), zap.Error(err))
+		response(c, entity.Response{
+			Status: http.StatusBadRequest,
+			Err:    entity.BadRequest,
+		})
+		return
+	}
+
+	brandName := filepath.Clean(c.Param("brandName"))
+
+	err := a.srv.RenameBrand(ctx, brandName, &req)
+	if err != nil {
+		a.log.Error("Err rename brand "+req.Name, zap.Error(err))
+		response(c, entity.Response{
+			Err: err,
+		})
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/admin/brands")
+}
+
 func (a *AdminTransport) DeleteBrand(c *gin.Context) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 8*time.Second)
 	defer cancel()
 	brandName := filepath.Clean(c.Param("brandName"))
 
@@ -80,7 +111,7 @@ func (a *AdminTransport) DeleteBrand(c *gin.Context) {
 
 func (a *AdminTransport) ChangeBrandPassword(c *gin.Context) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 8*time.Second)
 	defer cancel()
 	brandName := filepath.Clean(c.Param("brandName"))
 
@@ -112,7 +143,7 @@ func (a *AdminTransport) ChangeBrandPassword(c *gin.Context) {
 
 func (a *AdminTransport) ListAllBrandWorks(c *gin.Context) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 4*time.Second)
 	defer cancel()
 
 	brandName := filepath.Clean(c.Param("brandName"))
@@ -132,17 +163,31 @@ func (a *AdminTransport) ListAllBrandWorks(c *gin.Context) {
 	})
 }
 
-// нужно чтобы начал отличать расширения, можно тольео png, jpg, jpeg, gif
 func (a *AdminTransport) AddNewWork(c *gin.Context) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
 	defer cancel()
 
-	brandName := filepath.Clean(c.Param("brandName"))
-	workName := filepath.Clean(c.Param("workName"))
-	url := c.PostForm("url")
+	rawJSON := c.PostForm("data")
+	if rawJSON == "" {
+		response(c, entity.Response{Err: entity.BadRequest})
+		return
+	}
 
-	count, err := a.srv.AddNewWork(ctx, brandName, workName, url, c)
+	var req entity.Works
+	if err := json.Unmarshal([]byte(rawJSON), &req); err != nil {
+		response(c, entity.Response{Err: entity.BadRequest})
+		return
+	}
+	if req.Brand != filepath.Clean(c.Param("brandName")) {
+		a.log.Error("Brand name not match", zap.String("brand", req.Brand), zap.String("param", c.Param("brandName")))
+		response(c, entity.Response{
+			Status: http.StatusBadRequest,
+		})
+		return
+	}
+
+	count, err := a.srv.AddNewWork(ctx, &req, c)
 	if err != nil {
 		a.log.Error("Err add new work", zap.Error(err))
 		response(c, entity.Response{
@@ -151,7 +196,7 @@ func (a *AdminTransport) AddNewWork(c *gin.Context) {
 		return
 	}
 
-	answ := fmt.Sprintf("Added to %s %v files", workName, count)
+	answ := fmt.Sprintf("Added to %s %v files", req.WorkName, count)
 
 	response(c, entity.Response{
 		Status: http.StatusOK,
@@ -161,7 +206,7 @@ func (a *AdminTransport) AddNewWork(c *gin.Context) {
 
 func (a *AdminTransport) DeleteWork(c *gin.Context) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
 	brandName := filepath.Clean(c.Param("brandName"))
@@ -183,14 +228,20 @@ func (a *AdminTransport) DeleteWork(c *gin.Context) {
 
 func (a *AdminTransport) ChangeWorkFields(c *gin.Context) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	req := entity.Works{}
 	brandName := filepath.Clean(c.Param("brandName"))
 	workName := filepath.Clean(c.Param("workName"))
 
-	err := c.ShouldBindJSON(&req)
+	rawJSON := c.PostForm("data")
+	if rawJSON == "" {
+		response(c, entity.Response{Err: entity.BadRequest})
+		return
+	}
+
+	req := entity.Works{}
+	err := json.Unmarshal([]byte(rawJSON), &req)
 	if err != nil {
 		a.log.Error("Bad request", zap.Error(err))
 		response(c, entity.Response{
@@ -200,7 +251,7 @@ func (a *AdminTransport) ChangeWorkFields(c *gin.Context) {
 		return
 	}
 
-	err = a.srv.ChangeWorkFields(ctx, brandName, workName, &req)
+	err = a.srv.ChangeWorkFields(ctx, brandName, workName, &req, c)
 	if err != nil {
 		a.log.Error("Cant change work fields", zap.Error(err))
 		response(c, entity.Response{

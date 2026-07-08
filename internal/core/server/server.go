@@ -93,11 +93,12 @@ func route(
 
 	protectAdmin.Handle(http.MethodGet, "/brands", admin.ListBrands)
 	protectAdmin.Handle(http.MethodPost, "/brands/add", admin.AddNewBrand)
+	protectAdmin.Handle(http.MethodPut, "/:brandName/rename", admin.RenameBrand)
 	protectAdmin.Handle(http.MethodDelete, "/:brandName", admin.DeleteBrand)
 	protectAdmin.Handle(http.MethodPut, "/:brandName/password", admin.ChangeBrandPassword)
 
 	protectAdmin.Handle(http.MethodGet, "/:brandName/works", admin.ListAllBrandWorks)
-	protectAdmin.Handle(http.MethodPost, "/:brandName/:workName/add", admin.AddNewWork)
+	protectAdmin.Handle(http.MethodPost, "/:brandName/works/add", admin.AddNewWork)
 	protectAdmin.Handle(http.MethodDelete, "/:brandName/remove/:workName", admin.DeleteWork)
 	protectAdmin.Handle(http.MethodPut, "/:brandName/:workName/change", admin.ChangeWorkFields)
 

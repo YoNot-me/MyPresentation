@@ -13,13 +13,12 @@ import (
 )
 
 func (t *FileServingTransport) ServeHTML(c *gin.Context) {
-
-	http.ServeFile(c.Writer, c.Request, "./public/presentation/index.html")
+	http.StripPrefix("/public/presentation/", http.FileServer(http.Dir("./works")))
 }
 
 func (t *FileServingTransport) ListWorkFiles(c *gin.Context) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
 	brandName, err := t.srv.GetName(c)
