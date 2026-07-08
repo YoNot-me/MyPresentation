@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="DataSourcePerFileMappings">
-    <file url="file://$PROJECT_DIR$/internal/features/admin/repository/database.go" value="24a4102d-976f-4567-b972-54557c33b42c" />
-  </component>
-</project>
