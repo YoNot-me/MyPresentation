@@ -1,212 +1,218 @@
 # Presentator
 
-Бэкенд-сервис для **приватного хостинга презентаций**. Каждый бренд получает персональный доступ к своим материалам (works), а администратор централизованно управляет брендами и их презентациями.
+A backend service for **privately hosting presentations**. Each brand gets personal access to its own materials (works), while an administrator centrally manages brands and their presentations.
 
-Написан на **Go** с чистой feature-ориентированной архитектурой, JWT-аутентификацией поверх Redis, хранением данных в PostgreSQL и полной контейнеризацией через Docker Compose.
-
----
-
-## Возможности
-
-- **Приватные кабинеты брендов.** Бренд входит по логину/паролю и видит только свои презентации.
-- **Двухуровневая авторизация.** Разграничение прав `бренд` и `администратор` на уровне middleware.
-- **Админ-панель (API).** Создание/удаление брендов, смена паролей, добавление/редактирование/удаление works.
-- **Защищённая раздача файлов.** HTML-презентации отдаются по брендам с изоляцией доступа и защитой от path traversal (`filepath.Clean`).
-- **JWT-сессии в Redis.** Токены хранятся в Redis, поддерживается logout (инвалидация сессии).
-- **Продакшн-практики.** Graceful shutdown, структурное логирование (zap), таймауты запросов, лимит размера тела запроса.
+Built in **Go** with a clean feature-based architecture, JWT authentication backed by Redis, PostgreSQL for storage, and full containerization via Docker Compose.
 
 ---
 
-## Технологический стек
+## Features
 
-| Слой | Технология |
+- **Private brand accounts.** A brand signs in with a login/password and sees only its own presentations.
+- **Two-level authorization.** `brand` and `administrator` permissions are separated at the middleware level.
+- **Admin panel (API).** Create/delete brands, change passwords, add/edit/delete works.
+- **Protected file serving.** HTML presentations are served per-brand with access isolation and path-traversal protection (`filepath.Clean`).
+- **JWT sessions in Redis.** Tokens are stored in Redis; logout invalidates the session.
+- **Production practices.** Graceful shutdown, structured logging (zap), request timeouts, request body size limit.
+
+---
+
+## Tech stack
+
+| Layer | Technology |
 |------|-----------|
-| Язык | Go 1.26 |
-| HTTP-фреймворк | [Gin](https://github.com/gin-gonic/gin) |
-| База данных | PostgreSQL 18 (драйвер [pgx/v5](https://github.com/jackc/pgx), пул соединений) |
-| Сессии / кэш | Redis 8 |
-| Аутентификация | JWT ([golang-jwt/v5](https://github.com/golang-jwt/jwt)) |
-| Логирование | [zap](https://github.com/uber-go/zap) |
-| Миграции | [golang-migrate](https://github.com/golang-migrate/migrate) |
-| Конфигурация | godotenv (`.env`) |
-| Оркестрация | Docker Compose + Makefile |
+| Language | Go 1.26 |
+| HTTP framework | [Gin](https://github.com/gin-gonic/gin) |
+| Database | PostgreSQL 18 (driver [pgx/v5](https://github.com/jackc/pgx), connection pool) |
+| Sessions / cache | Redis 8 |
+| Authentication | JWT ([golang-jwt/v5](https://github.com/golang-jwt/jwt)) |
+| Logging | [zap](https://github.com/uber-go/zap) |
+| Migrations | [golang-migrate](https://github.com/golang-migrate/migrate) |
+| Configuration | godotenv (`.env`) |
+| Orchestration | Docker Compose + Makefile |
 
 ---
 
-## Архитектура
+## Architecture
 
-Проект следует **feature-based** структуре: каждая фича самодостаточна и разбита на слои `transport → service → repository`.
+The project follows a **feature-based** structure: each feature is self-contained and split into `transport → service → repository` layers.
 
 ```
 .
-├── cmd/                        # точка входа: инициализация зависимостей и запуск сервера
-│   ├── main.go                 # сборка сервисов, graceful shutdown
-│   └── init.go                 # загрузка .env, подключение к Postgres/Redis, логгер
+├── cmd/                        # entry point: dependency initialization and server startup
+│   ├── main.go                 # service wiring, graceful shutdown
+│   └── init.go                 # loads .env, connects to Postgres/Redis, logger
 ├── internal/
-│   ├── core/                   # общее ядро приложения
-│   │   ├── server/             # инициализация HTTP-сервера и роутинг
-│   │   ├── middleware/         # защита маршрутов (бренд/админ), лимит размера тела
-│   │   ├── repository/         # открытие пула соединений с БД
-│   │   ├── entity/             # сущности, конфиг, маппинг ошибок → HTTP-статусы
-│   │   └── logger/             # инициализация zap
-│   └── features/               # бизнес-фичи
-│       ├── auth/               # вход брендов, JWT-токены, logout
-│       │   └── token/          # выпуск/валидация JWT, хранение в Redis
-│       ├── admin/              # управление брендами и works
-│       └── fileserving/        # выдача списка и раздача файлов презентаций
-├── migrations/                 # SQL-миграции (up/down)
-├── public/                     # статические ассеты (страницы auth и presentation)
+│   ├── core/                   # shared application core
+│   │   ├── server/             # HTTP server initialization and routing
+│   │   ├── middleware/         # route protection (brand/admin), body size limit
+│   │   ├── repository/         # database connection pool setup
+│   │   ├── entity/             # entities, config, error → HTTP status mapping
+│   │   └── logger/             # zap logger initialization
+│   └── features/               # business features
+│       ├── auth/               # brand sign-in, JWT tokens, logout
+│       │   └── token/          # issuing/validating JWTs, storage in Redis
+│       ├── admin/               # brand and work management
+│       └── fileserving/         # listing and serving presentation files
+├── migrations/                 # SQL migrations (up/down)
+├── public/                     # static assets (auth and presentation pages)
 ├── docker-compose.yaml
 ├── Makefile
-└── go.mod
+├── go.mod
+└── public                      # frontend
 ```
 
-Каждая фича слоится единообразно:
+Each feature is layered consistently:
 
-- **transport** — HTTP-хендлеры (Gin), парсинг запроса, формирование ответа.
-- **service** — бизнес-логика.
-- **repository** — доступ к данным (SQL через pgx).
+- **transport** — HTTP handlers (Gin), request parsing, response formatting.
+- **service** — business logic.
+- **repository** — data access (SQL via pgx).
 
-Ошибки описаны как sentinel-значения в `entity/err.go`, а функция `FindStatus` централизованно превращает их в корректные HTTP-коды.
+Errors are declared as sentinel values in `entity/err.go`, and the `FindStatus` function centrally maps them to the correct HTTP status codes.
 
 ---
 
-## Модель данных
+## Data model
 
 ```sql
 CREATE SCHEMA presentation;
 
--- бренды (арендаторы) с хэшем пароля
+-- brands (tenants), identified by a unique name, with a hashed password
 CREATE TABLE brands (
-    id       SERIAL       PRIMARY KEY,
     name     VARCHAR(256) UNIQUE NOT NULL,
     password TEXT         NOT NULL
 );
 
--- презентации, привязанные к бренду
+-- presentations linked to a brand
 CREATE TABLE works (
-    id       SERIAL       PRIMARY KEY,
-    brand    VARCHAR(256) NOT NULL,
-    workName VARCHAR(256) NOT NULL,
-    url      TEXT         NOT NULL DEFAULT '',
+    brand       VARCHAR(256) NOT NULL,
+    workName    VARCHAR(256) NOT NULL,
+    url         TEXT         DEFAULT '',
+    description TEXT         NOT NULL DEFAULT '',
 
     CONSTRAINT presentation_work FOREIGN KEY (brand)
-        REFERENCES brands(name) ON DELETE CASCADE,
+        REFERENCES brands(name)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
     CONSTRAINT unique_brand_work UNIQUE (brand, workName)
 );
 
 CREATE INDEX work_name_idx ON works(workName);
 ```
 
-Каскадное удаление гарантирует, что при удалении бренда удаляются все его works.
+Cascading delete guarantees that removing a brand also removes all of its works; renaming a brand cascades to its works via `ON UPDATE CASCADE`.
 
 ---
 
 ## API
 
-### Публичные маршруты
+### Public routes
 
-| Метод | Путь | Описание |
+| Method | Path | Description |
 |-------|------|----------|
-| `GET`  | `/auth` | Страница/эндпоинт входа бренда |
-| `POST` | `/auth/check` | Аутентификация бренда, выдача JWT |
-| `POST` | `/logout` | Выход, инвалидация сессии |
-| `POST` | `/admin/auth` | Аутентификация администратора |
+| `GET`  | `/auth` | Brand sign-in page/endpoint |
+| `POST` | `/auth/check` | Brand authentication, issues a JWT |
+| `POST` | `/logout` | Sign out, session invalidation |
+| `GET`  | `/admin` | Admin sign-in page |
+| `POST` | `/admin/auth` | Administrator authentication |
+| `POST` | `/logout/admin` | Administrator sign-out |
 
-### Маршруты бренда (требуют JWT-токен бренда)
+### Brand routes (require a brand JWT)
 
-| Метод | Путь | Описание |
+| Method | Path | Description |
 |-------|------|----------|
-| `GET` | `/works` | Список презентаций текущего бренда |
-| `GET` | `/works/serve` | Отдача HTML-оболочки галереи |
-| `GET` | `/presentation/:name/*filepath` | Раздача файлов конкретной презентации |
+| `GET` | `/works` | List of the current brand's presentations |
+| `GET` | `/works/files/:name` | List of files for a presentation |
+| `GET` | `/works/serve` | Serves the gallery HTML shell |
+| `GET` | `/presentation/:name/*filepath` | Serves files for a specific presentation |
 
-### Маршруты администратора (требуют JWT админа, префикс `/admin`)
+### Administrator routes (require an admin JWT, `/admin` prefix)
 
-| Метод    | Путь | Описание                            |
-|----------|------|-------------------------------------|
-| `GET`    | `/admin/brands` | Список всех брендов                 |
-| `POST`   | `/admin/brands/add` | Создать бренд                       |
-| `PUT`    | `/:brandName/rename` | Переименовать бренд                 |
-| `DELETE` | `/admin/:brandName` | Удалить бренд                       |
-| `PUT`    | `/admin/:brandName/password` | Сменить пароль бренда               |
-| `GET`    | `/admin/:brandName/works` | Список works бренда                 |
-| `POST`   | `/admin/:brandName/:workName/add` | Добавить work                       |
-| `DELETE` | `/admin/:brandName/remove/:workName` | Удалить work                        |
-| `PUT`    | `/admin/:brandName/:workName/change` | Изменить поля work                  |
-| `GET`    | `/admin/:brandName/serve/:workName/*filepath` | Раздача файлов work от имени админа |
+| Method   | Path | Description |
+|----------|------|-------------|
+| `GET`    | `/admin/brands` | List of all brands |
+| `POST`   | `/admin/brands/add` | Create a brand |
+| `PUT`    | `/admin/:brandName/rename` | Rename a brand |
+| `DELETE` | `/admin/:brandName` | Delete a brand |
+| `PUT`    | `/admin/:brandName/password` | Change a brand's password |
+| `GET`    | `/admin/:brandName/works` | List a brand's works |
+| `POST`   | `/admin/:brandName/works/add` | Add a work |
+| `DELETE` | `/admin/:brandName/remove/:workName` | Delete a work |
+| `PUT`    | `/admin/:brandName/:workName/change` | Update a work's fields |
+| `GET`    | `/admin/:brandName/files/:workName` | List files for a work |
+| `GET`    | `/admin/:brandName/serve/:workName/*filepath` | Serve a work's files as an admin |
 
 ---
 
-## Конфигурация
+## Configuration
 
-Приложение читает настройки из `.env` в корне проекта.
+The application reads its settings from a `.env` file in the project root.
 
-| Переменная | Назначение | Пример |
+| Variable | Purpose | Example |
 |------------|-----------|--------|
-| `PRES_ADDR` | Адрес прослушивания HTTP-сервера | `:8080` |
-| `PRES_DATABASE_URL` | Строка подключения к PostgreSQL | `postgres://user:pass@localhost:5433/presentation?sslmode=disable` |
-| `PRES_JWT_SECRET` | Секретный ключ для подписи JWT | `super-secret-key` |
-| `PRES_REQ_TIMEOUT` | Таймаут запроса | `180s` |
-| `POSTGRES_USER` | Пользователь БД (для Docker/миграций) | `postgres` |
-| `POSTGRES_PASSWORD` | Пароль БД | `postgres` |
-| `POSTGRES_DB` | Имя БД | `presentation` |
-| `REDIS_PASSWORD` | Имя БД | `my_pres_redis123` |
+| `PRES_ADDR` | HTTP server listen address | `:8080` |
+| `PRES_DATABASE_URL` | PostgreSQL connection string | `postgres://user:pass@localhost:5433/presentation?sslmode=disable` |
+| `PRES_JWT_SECRET` | Secret key for signing JWTs | `super-secret-key` |
+| `PRES_REQ_TIMEOUT` | Request timeout | `180s` |
+| `POSTGRES_USER` | Database user (for Docker/migrations) | `postgres` |
+| `POSTGRES_PASSWORD` | Database password | `postgres` |
+| `POSTGRES_DB` | Database name | `presentation` |
+| `REDIS_PASSWORD` | Redis password | `my_pres_redis123` |
 
-> Redis по умолчанию поднимается на `localhost:6379`.
+> Redis is exposed on `localhost:6379` by default.
 
 ---
 
-## Запуск
+## Running the project
 
-### Предварительные требования
+### Prerequisites
 
-- Docker и Docker Compose
-- Go 1.26+ (для локального запуска приложения)
+- Docker and Docker Compose
+- Go 1.26+ (for running the application locally)
 
-### Через Docker Compose (инфраструктура + миграции)
+### Via Docker Compose (infrastructure + migrations)
 
 ```bash
-# поднять Postgres, Redis, port-forwarder и применить миграции
+# start Postgres, Redis, the port-forwarder, and apply migrations
 make run
 ```
 
-`make run` последовательно:
-1. поднимает контейнеры `postgres-database` и `redis` и ждёт готовности БД;
-2. запускает `port-forwarder` (socat) на `127.0.0.1:5433 → postgres:5432`;
-3. применяет миграции (`migrate-up`).
+`make run` runs, in order:
+1. starts the `postgres-database` and `redis` containers and waits for the database to become ready;
+2. starts the `port-forwarder` (socat) on `127.0.0.1:5433 → postgres:5432`;
+3. applies migrations (`migrate-up`).
 
-Затем запустите само приложение:
+Then start the application itself:
 
 ```bash
 make run-local   # go run ./cmd
 ```
 
-Сервер стартует на `localhost:8080`.
+The server starts on `localhost:8080`.
 
-### Полезные команды Makefile
+### Useful Makefile commands
 
-| Команда | Действие |
-|---------|----------|
-| `make compose-up` | Поднять Postgres и Redis |
-| `make compose-down` | Остановить контейнеры |
-| `make migrate-up` / `make migrate-down` | Применить / откатить миграции |
-| `make migrate-create seq=<name>` | Создать новую миграцию |
-| `make run-local` | Запустить приложение локально |
-| `make clean-env` | Удалить контейнеры, образы и данные БД |
-| `make logs-db` | Логи контейнера PostgreSQL |
-
----
-
-## Особенности реализации
-
-- **Graceful shutdown.** Сервер слушает `SIGINT`/`SIGTERM`, корректно закрывает HTTP, пул БД и Redis с таймаутом 10 с.
-- **Централизованная обработка ошибок.** Sentinel-ошибки → HTTP-статусы через `entity.FindStatus`, единый формат ответа `entity.Response`.
-- **Изоляция инфраструктуры.** Доступ к Postgres проброшен через socat-порт-форвардер, что упрощает локальную разработку и деплой.
-- **Единая точка сборки зависимостей.** Все сервисы конструируются в `cmd/main.go` через явный DI (без глобального состояния).
+| Command | Action |
+|---------|--------|
+| `make compose-up` | Start Postgres and Redis |
+| `make compose-down` | Stop the containers |
+| `make migrate-up` / `make migrate-down` | Apply / roll back migrations |
+| `make migrate-create seq=<name>` | Create a new migration |
+| `make run-local` | Run the application locally |
+| `make clean-env` | Remove containers, images, and database data |
+| `make logs-db` | Show PostgreSQL container logs |
 
 ---
 
-## Лицензия
+## Implementation notes
 
-См. файл [LICENSE](./LICENSE).
+- **Graceful shutdown.** The server listens for `SIGINT`/`SIGTERM` and cleanly closes the HTTP server, the database pool, and Redis with a 10s timeout.
+- **Centralized error handling.** Sentinel errors are mapped to HTTP statuses via `entity.FindStatus`, with a single `entity.Response` response format.
+- **Infrastructure isolation.** Access to Postgres is proxied through a socat port-forwarder, simplifying local development and deployment.
+- **Single dependency-wiring point.** All services are constructed in `cmd/main.go` via explicit dependency injection (no global state).
+
+---
+
+## License
+
+See the [LICENSE](./LICENSE) file.
