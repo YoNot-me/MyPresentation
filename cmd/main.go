@@ -83,7 +83,6 @@ func main() {
 	}
 
 	srv.Logger.Info("Server closed")
-	os.Exit(0)
 }
 
 func initServices(
