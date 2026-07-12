@@ -23,7 +23,6 @@ func (j *ServingJWT) ValidateToken(token string) (*jwt.Token, bool) {
 	if err != nil {
 		return nil, false
 	}
-
 	if !parsed.Valid {
 		return nil, false
 	}
@@ -59,19 +58,13 @@ func (j *ServingJWT) CreateToken(ctx context.Context, brandName, ip, role string
 	return newToken, nil
 }
 
-func (j *ServingJWT) CheckAccess(token *jwt.Token, ip string) bool {
+func (j *ServingJWT) CheckAccess(ctx context.Context, token *jwt.Token, ip, role string) bool {
 
-	claims := token.Claims.(*JWT)
-
-	if claims.Ip != ip {
-		j.log.Error("invalid token: " + ip)
+	ok := j.IsExist(ctx, ip)
+	if !ok {
+		j.log.Error("failed to check token: " + ip)
 		return false
 	}
-
-	return true
-}
-
-func (j *ServingJWT) CheckAdminAccess(token *jwt.Token, ip, role string) bool {
 
 	claims := token.Claims.(*JWT)
 

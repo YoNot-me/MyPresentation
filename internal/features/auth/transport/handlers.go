@@ -54,7 +54,7 @@ func (t *AuthTransport) AuthBrand(c *gin.Context) {
 		12*60*60,
 		"/",
 		"",
-		false,
+		true,
 		true,
 	)
 
