@@ -3,15 +3,19 @@ package adminRepository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"presentator/internal/core/entity"
+	"strconv"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/redis/go-redis/v9"
 )
 
 func (ar *AdminRepo) ListAllBrands(ctx context.Context) ([]entity.BrandsResponse, error) {
 
 	const query = `
-		SELECT name FROM brands
+		SELECT name FROM presentation.brands
 	`
 
 	res, err := ar.db.Query(ctx, query)
@@ -41,7 +45,7 @@ func (ar *AdminRepo) ListAllBrands(ctx context.Context) ([]entity.BrandsResponse
 func (ar *AdminRepo) AddNewBrand(ctx context.Context, brandName, hashPass string) error {
 
 	const query = `
-		INSERT INTO brands (name, password) VALUES ($1, $2)
+		INSERT INTO presentation.brands (name, password) VALUES ($1, $2)
 	`
 	res, err := ar.db.Exec(ctx, query, brandName, hashPass)
 	if err != nil {
@@ -62,7 +66,7 @@ func (ar *AdminRepo) AddNewBrand(ctx context.Context, brandName, hashPass string
 func (ar *AdminRepo) ChangeBrandPassword(ctx context.Context, brandName, newPass string) error {
 
 	const query = `
-		UPDATE brands SET password = $1 WHERE name = $2
+		UPDATE presentation.brands SET password = $1 WHERE name = $2
 	`
 	res, err := ar.db.Exec(ctx, query, newPass, brandName)
 	if err != nil {
@@ -79,7 +83,7 @@ func (ar *AdminRepo) ChangeBrandPassword(ctx context.Context, brandName, newPass
 func (ar *AdminRepo) RenameBrand(ctx context.Context, brandName, newName string) error {
 
 	const query = `
-		UPDATE brands SET name = $1 WHERE name = $2
+		UPDATE presentation.brands SET name = $1 WHERE name = $2
 	`
 	res, err := ar.db.Exec(ctx, query, newName, brandName)
 	if err != nil {
@@ -96,7 +100,7 @@ func (ar *AdminRepo) RenameBrand(ctx context.Context, brandName, newName string)
 func (ar *AdminRepo) DeleteBrand(ctx context.Context, brandName string) error {
 
 	const query = `
-		DELETE FROM brands WHERE name = $1
+		DELETE FROM presentation.brands WHERE name = $1
 	`
 	res, err := ar.db.Exec(ctx, query, brandName)
 	if err != nil {
@@ -113,7 +117,7 @@ func (ar *AdminRepo) DeleteBrand(ctx context.Context, brandName string) error {
 func (ar *AdminRepo) ListAllWorks(ctx context.Context, brandName string) ([]entity.WorksResponse, error) {
 
 	const query = `
-		SELECT workName, url, description FROM works WHERE brand = $1
+		SELECT workName, url, description FROM presentation.works WHERE brand = $1
 	`
 
 	res, err := ar.db.Query(ctx, query, brandName)
@@ -143,7 +147,7 @@ func (ar *AdminRepo) ListAllWorks(ctx context.Context, brandName string) ([]enti
 func (ar *AdminRepo) AddNewWork(ctx context.Context, req *entity.Works) error {
 
 	const query = `
-		INSERT INTO works (brand, workName, url, description)
+		INSERT INTO presentation.works (brand, workName, url, description)
 		VALUES ($1, $2, $3, $4)
 	`
 
@@ -170,7 +174,7 @@ func (ar *AdminRepo) AddNewWork(ctx context.Context, req *entity.Works) error {
 func (ar *AdminRepo) DeleteWork(ctx context.Context, brandName, workName string) error {
 
 	const query = `
-		DELETE FROM works WHERE brand = $1 AND workName = $2
+		DELETE FROM presentation.works WHERE brand = $1 AND workName = $2
 	`
 
 	res, err := ar.db.Exec(ctx, query, brandName, workName)
@@ -191,7 +195,7 @@ func (ar *AdminRepo) ChangeWorkFields(
 	work *entity.Works) error {
 
 	const query = `
-		UPDATE works
+		UPDATE presentation.works
 		SET
 			workName    = CASE WHEN $3 <> '' THEN $3 ELSE workName END,
 			url         = CASE WHEN $4 <> '' THEN $4 ELSE url END,
@@ -229,7 +233,7 @@ func (ar *AdminRepo) ChangeWorkFields(
 func (ar *AdminRepo) GetWork(ctx context.Context, brandName, workName string) (entity.Works, error) {
 
 	const query = `
-		SELECT brand, workName, url, description FROM works WHERE brand = $1 AND workName = $2
+		SELECT brand, workName, url, description FROM presentation.works WHERE brand = $1 AND workName = $2
 	`
 
 	var work entity.Works
@@ -245,4 +249,52 @@ func (ar *AdminRepo) GetWork(ctx context.Context, brandName, workName string) (e
 	}
 
 	return work, nil
+}
+
+func (ar *AdminRepo) BruteCount(ctx context.Context, ip string) (int, error) {
+
+	query := fmt.Sprintf("brute:admin:auth:%s", ip)
+
+	cmd, err := ar.rdb.Get(ctx, query).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return 0, nil
+		}
+		return -1, err
+	}
+
+	if cmd == "" {
+		return 0, nil
+	}
+
+	res, err := strconv.Atoi(cmd)
+	if err != nil {
+		return -1, err
+	}
+
+	return res, nil
+}
+
+func (ar *AdminRepo) IncCount(ctx context.Context, ip string) error {
+
+	query := fmt.Sprintf("brute:admin:auth:%s", ip)
+
+	val, err := ar.rdb.Incr(ctx, query).Result()
+	if err != nil {
+		return err
+	}
+
+	if val == 1 {
+		err = ar.rdb.Expire(ctx, query, 3*time.Minute).Err()
+		if err != nil {
+			delErr := ar.rdb.Del(ctx, query).Err()
+			if delErr != nil {
+				return delErr
+			}
+
+			return err
+		}
+	}
+
+	return nil
 }

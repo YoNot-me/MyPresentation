@@ -71,7 +71,7 @@ func route(
 
 	//basic
 	r.Handle(http.MethodGet, "/", func(c *gin.Context) {
-
+		c.Redirect(http.StatusMovedPermanently, "/works")
 	})
 
 	//auth

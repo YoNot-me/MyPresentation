@@ -148,16 +148,17 @@ Cascading delete guarantees that removing a brand also removes all of its works;
 
 The application reads its settings from a `.env` file in the project root.
 
-| Variable | Purpose | Example |
-|------------|-----------|--------|
-| `PRES_ADDR` | HTTP server listen address | `:8080` |
-| `PRES_DATABASE_URL` | PostgreSQL connection string | `postgres://user:pass@localhost:5433/presentation?sslmode=disable` |
-| `PRES_JWT_SECRET` | Secret key for signing JWTs | `super-secret-key` |
-| `PRES_REQ_TIMEOUT` | Request timeout | `180s` |
-| `POSTGRES_USER` | Database user (for Docker/migrations) | `postgres` |
-| `POSTGRES_PASSWORD` | Database password | `postgres` |
-| `POSTGRES_DB` | Database name | `presentation` |
-| `REDIS_PASSWORD` | Redis password | `my_pres_redis123` |
+| Variable            | Purpose                               | Example |
+|---------------------|---------------------------------------|--------|
+| `PRES_ADDR`         | HTTP server listen address            | `:8080` |
+| `PRES_DATABASE_URL` | PostgreSQL connection string          | `postgres://user:pass@localhost:5433/presentation?sslmode=disable` |
+| `PRES_JWT_SECRET`   | Secret key for signing JWTs           | `super-secret-key` |
+| `PRES_REQ_TIMEOUT`  | Request timeout                       | `180s` |
+| `POSTGRES_USER`     | Database user (for Docker/migrations) | `postgres` |
+| `POSTGRES_PASSWORD` | Database password                     | `postgres` |
+| `POSTGRES_DB`       | Database name                         | `presentation` |
+| `REDIS_PASSWORD`    | Redis password                        | `my_pres_redis123` |
+| `REDIS_ADDR`        | Redis addr                            | `localhost:6379` |
 
 > Redis is exposed on `localhost:6379` by default.
 

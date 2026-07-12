@@ -7,10 +7,26 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 func (j *ServingJWT) ValidateToken(token string) (*jwt.Token, bool) {
+
+	parsed, err := j.ParseToken(token)
+	if err != nil {
+		j.log.Error("failed to parse token", zap.Error(err))
+		return nil, false
+	}
+
+	if !parsed.Valid {
+		return nil, false
+	}
+
+	return parsed, true
+}
+
+func (j *ServingJWT) ParseToken(token string) (*jwt.Token, error) {
 
 	claims := JWT{}
 
@@ -21,22 +37,22 @@ func (j *ServingJWT) ValidateToken(token string) (*jwt.Token, bool) {
 		return []byte(j.env.JWTKey), nil
 	})
 	if err != nil {
-		return nil, false
-	}
-	if !parsed.Valid {
-		return nil, false
+		return nil, err
 	}
 
-	return parsed, true
+	return parsed, nil
 }
 
 func (j *ServingJWT) CreateToken(ctx context.Context, brandName, ip, role string) (string, error) {
+
+	jti := uuid.NewString()
 
 	customClaims := &JWT{
 		Ip:        ip,
 		BrandName: brandName,
 		Role:      role,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        jti,
 			Issuer:    "YoNot",
 			Subject:   ip,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(12 * time.Hour)),
@@ -50,7 +66,7 @@ func (j *ServingJWT) CreateToken(ctx context.Context, brandName, ip, role string
 		return "", err
 	}
 
-	if err = j.rdb.Set(ctx, ip, newToken, 12*time.Hour).Err(); err != nil {
+	if err = j.rdb.Set(ctx, "sess:"+jti, newToken, 12*time.Hour).Err(); err != nil {
 		j.log.Error("failed to store token: "+ip+" "+brandName, zap.Error(err))
 		return "", err
 	}
@@ -58,37 +74,43 @@ func (j *ServingJWT) CreateToken(ctx context.Context, brandName, ip, role string
 	return newToken, nil
 }
 
-func (j *ServingJWT) CheckAccess(ctx context.Context, token *jwt.Token, ip, role string) bool {
-
-	ok := j.IsExist(ctx, ip)
-	if !ok {
-		j.log.Error("failed to check token: " + ip)
-		return false
-	}
+func (j *ServingJWT) CheckAccess(token *jwt.Token, jti string) bool {
 
 	claims := token.Claims.(*JWT)
 
-	if claims.Ip != ip {
-		j.log.Error("invalid token: " + ip)
-		return false
-	}
-	if claims.Role != role {
-		j.log.Error("invalid token: " + ip)
+	if claims.ID != jti {
+		j.log.Error("invalid token: " + jti)
 		return false
 	}
 
 	return true
 }
 
-func (j *ServingJWT) LogOut(ctx context.Context, ip string) error {
+func (j *ServingJWT) CheckAdminAccess(token *jwt.Token, jti, role string) bool {
 
-	if err := j.rdb.Del(ctx, ip).Err(); err != nil {
+	claims := token.Claims.(*JWT)
+
+	if claims.ID != jti {
+		j.log.Error("invalid token: " + jti)
+		return false
+	}
+	if claims.Role != role {
+		j.log.Error("invalid token: " + jti)
+		return false
+	}
+
+	return true
+}
+
+func (j *ServingJWT) LogOut(ctx context.Context, jti string) error {
+
+	if err := j.rdb.Del(ctx, jti).Err(); err != nil {
 
 		go func() {
-			j.log.Error("retry to delete token: " + ip)
-			retryErr := j.RetryDeleteToken(ip)
+			j.log.Error("retry to delete token: " + jti)
+			retryErr := j.RetryDeleteToken(jti)
 			if retryErr != nil {
-				j.log.Error("failed to enqueue retry: "+ip, zap.Error(retryErr))
+				j.log.Error("failed to enqueue retry: "+jti, zap.Error(retryErr))
 			}
 		}()
 	}
@@ -96,7 +118,7 @@ func (j *ServingJWT) LogOut(ctx context.Context, ip string) error {
 	return nil
 }
 
-func (j *ServingJWT) RetryDeleteToken(ip string) error {
+func (j *ServingJWT) RetryDeleteToken(jti string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -105,9 +127,9 @@ func (j *ServingJWT) RetryDeleteToken(ip string) error {
 
 	for i := 0; i < 3; i++ {
 
-		err := j.rdb.Del(ctx, ip).Err()
+		err := j.rdb.Del(ctx, jti).Err()
 		if err == nil {
-			j.log.Info("token deleted: " + ip)
+			j.log.Info("token deleted: " + jti)
 			return nil
 		}
 
@@ -118,9 +140,9 @@ func (j *ServingJWT) RetryDeleteToken(ip string) error {
 	return fmt.Errorf("logout failed after retries: %v", lastErr)
 }
 
-func (j *ServingJWT) IsExist(ctx context.Context, ip string) bool {
+func (j *ServingJWT) IsExist(ctx context.Context, jti string) bool {
 
-	ok := j.rdb.Exists(ctx, ip).Val() == 1
+	ok := j.rdb.Exists(ctx, jti).Val() == 1
 
 	return ok
 

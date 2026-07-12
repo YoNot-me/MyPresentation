@@ -33,8 +33,8 @@ func initFeatures(ctx context.Context) (
 		Addr:      os.Getenv("PRES_ADDR"),
 		DBURL:     os.Getenv("PRES_DATABASE_URL"),
 		JWTKey:    os.Getenv("PRES_JWT_SECRET"),
-		TimeOut:   os.Getenv("PRES_REQ_TIMEOUT"),
 		RedisPass: os.Getenv("REDIS_PASSWORD"),
+		RedisAddr: os.Getenv("REDIS_ADDR"),
 	}
 
 	db, err := repository.OpenDatabase(ctx, env.DBURL)
@@ -56,7 +56,7 @@ func initFeatures(ctx context.Context) (
 	logFile := logger.InitLogger(openFile)
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     env.RedisAddr,
 		Password: env.RedisPass,
 		DB:       0,
 		Protocol: 2,

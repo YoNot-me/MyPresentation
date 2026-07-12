@@ -1,0 +1,7 @@
+.env
+out
+.gocache
+logger.log
+works
+.idea
+.DS_Store

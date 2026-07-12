@@ -11,6 +11,14 @@ import (
 
 func (s *AdminService) AuthAdmin(ctx context.Context, ip string, req *entity.Admin) (string, error) {
 
+	count, err := s.rep.BruteCount(ctx, ip)
+	if err != nil {
+		return "", err
+	}
+	if count > 5 {
+		return "", entity.TooManyAttempts
+	}
+
 	login := os.Getenv("PRES_ADMIN_LOGIN")
 	password := os.Getenv("PRES_ADMIN_PASSWORD")
 
@@ -21,8 +29,13 @@ func (s *AdminService) AuthAdmin(ctx context.Context, ip string, req *entity.Adm
 	if !strings.EqualFold(req.Login, login) {
 		return "", entity.InvalidLogin
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(req.Password)); err != nil {
-		return "", entity.InvalidPass
+	if compareErr := bcrypt.CompareHashAndPassword([]byte(password), []byte(req.Password)); compareErr != nil {
+		incErr := s.rep.IncCount(ctx, ip)
+		if incErr != nil {
+			return "", incErr
+		}
+
+		return "", compareErr
 	}
 
 	token, err := s.jwt.CreateToken(ctx, "", ip, "admin")

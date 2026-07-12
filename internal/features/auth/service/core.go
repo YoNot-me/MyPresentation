@@ -10,6 +10,8 @@ import (
 
 type AuthRepo interface {
 	GetPass(ctx context.Context, name string) (string, error)
+	BruteCount(ctx context.Context, ip string) (int, error)
+	IncCount(ctx context.Context, ip string) error
 }
 
 type AuthService struct {

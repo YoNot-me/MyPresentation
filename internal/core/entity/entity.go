@@ -4,8 +4,8 @@ type Config struct {
 	Addr      string
 	DBURL     string
 	JWTKey    string
-	TimeOut   string
 	RedisPass string
+	RedisAddr string
 }
 
 type Admin struct {

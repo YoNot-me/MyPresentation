@@ -2,6 +2,7 @@ package adminTransport
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"presentator/internal/core/entity"
 	"time"
@@ -29,6 +30,13 @@ func (a *AdminTransport) AuthAdmin(c *gin.Context) {
 
 	token, err := a.srv.AuthAdmin(ctx, c.ClientIP(), &req)
 	if err != nil {
+		if errors.Is(err, entity.TooManyAttempts) {
+			a.log.Error("auth admin", zap.Error(err))
+			response(c, entity.Response{
+				Err: err,
+			})
+			return
+		}
 		a.log.Error("auth admin", zap.Error(err))
 		response(c, entity.Response{
 			Err: err,

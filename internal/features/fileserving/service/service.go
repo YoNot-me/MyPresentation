@@ -53,8 +53,6 @@ func (s *ServingService) GetBrandWorks(ctx context.Context, brandName string) ([
 	return response, nil
 }
 
-// GetWorkImages returns the slide image file names inside a work folder,
-// sorted by name. Sub-folders (such as "preview") and non-images are skipped.
 func (s *ServingService) GetWorkImages(brandName, workName string) ([]string, error) {
 
 	if brandName == "" || workName == "" {

@@ -1,12 +1,12 @@
 CREATE SCHEMA presentation;
 
 
-CREATE TABLE brands (
+CREATE TABLE presentation.brands (
     name            VARCHAR(256)    UNIQUE NOT NULL,
     password        TEXT            NOT NULL
 );
 
-CREATE TABLE works (
+CREATE TABLE presentation.works (
     brand               VARCHAR(256)    NOT NULL,
     workName            VARCHAR(256)    NOT NULL,
     url                 TEXT            DEFAULT '',
@@ -18,4 +18,4 @@ CREATE TABLE works (
     CONSTRAINT unique_brand_work UNIQUE (brand, workName)
 );
 
-CREATE INDEX work_name_idx ON works(workName);
+CREATE INDEX work_name_idx ON presentation.works(workName);

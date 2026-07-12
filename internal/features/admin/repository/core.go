@@ -2,14 +2,17 @@ package adminRepository
 
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 type AdminRepo struct {
-	db *pgxpool.Pool
+	rdb *redis.Client
+	db  *pgxpool.Pool
 }
 
-func NewAdminRepo(db *pgxpool.Pool) *AdminRepo {
+func NewAdminRepo(rdb *redis.Client, db *pgxpool.Pool) *AdminRepo {
 	return &AdminRepo{
-		db: db,
+		rdb: rdb,
+		db:  db,
 	}
 }

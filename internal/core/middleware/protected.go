@@ -24,7 +24,14 @@ func ProtectedAdmin(j *JWT.ServingJWT) gin.HandlerFunc {
 			return
 		}
 
-		ok = j.CheckAccess(c.Request.Context(), token, c.ClientIP(), "admin")
+		claims := token.Claims.(*JWT.JWT)
+		if !j.IsExist(c.Request.Context(), "sess:"+claims.ID) {
+			c.Redirect(http.StatusSeeOther, "/auth/admin.html")
+			c.Abort()
+			return
+		}
+
+		ok = j.CheckAdminAccess(token, "sess:"+claims.ID, "admin")
 		if !ok {
 			c.Redirect(http.StatusSeeOther, "/auth/admin.html")
 			c.Abort()
@@ -52,7 +59,14 @@ func Protected(j *JWT.ServingJWT) gin.HandlerFunc {
 			return
 		}
 
-		ok = j.CheckAccess(c.Request.Context(), token, c.ClientIP(), "guest")
+		claims := token.Claims.(*JWT.JWT)
+		if !j.IsExist(c.Request.Context(), "sess:"+claims.ID) {
+			c.Redirect(http.StatusSeeOther, "/auth/admin.html")
+			c.Abort()
+			return
+		}
+
+		ok = j.CheckAccess(token, "sess:"+claims.ID)
 		if !ok {
 			c.Redirect(http.StatusSeeOther, "/auth")
 			c.Abort()

@@ -7,7 +7,7 @@ import (
 
 func (r *ServingRepo) GetAllWorks(ctx context.Context, brandName string) ([]entity.Works, error) {
 
-	const query = "SELECT workName, url, description FROM works WHERE brand = $1"
+	const query = "SELECT workName, url, description FROM presentation.works WHERE brand = $1"
 
 	res, err := r.db.Query(ctx, query, brandName)
 	if err != nil {

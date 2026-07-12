@@ -54,8 +54,8 @@ func main() {
 	}(srv.Logger)
 	defer srv.DB.Close()
 	defer func(rdb *redis.Client) {
-		err := rdb.Close()
-		if err != nil {
+		closeErr := rdb.Close()
+		if closeErr != nil {
 			return
 		}
 	}(rdb)
@@ -98,11 +98,11 @@ func initServices(
 
 	jwtService := JWT.NewServingJWT(rdb, env, log)
 
-	authRepo := authRepository.NewAuthRepo(db)
+	authRepo := authRepository.NewAuthRepo(rdb, db)
 	authSrv := authService.NewAuthService(log, jwtService, authRepo)
 	authTrans := authTransport.NewAuthTransport(jwtService, log, authSrv)
 
-	adminRepo := adminRepository.NewAdminRepo(db)
+	adminRepo := adminRepository.NewAdminRepo(rdb, db)
 	adminSrv := adminService.NewAdminService(log, adminRepo, jwtService)
 	adminTrans := adminTransport.NewAdminTransport(log, adminSrv)
 

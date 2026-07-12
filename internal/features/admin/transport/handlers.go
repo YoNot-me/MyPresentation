@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"presentator/internal/core/entity"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -269,6 +270,10 @@ func (a *AdminTransport) ServingWork(c *gin.Context) {
 	brandName := filepath.Clean(c.Param("brandName"))
 	workName := filepath.Clean(c.Param("workName"))
 	relPath := filepath.Clean(c.Param("filepath"))
+	if strings.Contains(relPath, "..") {
+		c.Status(http.StatusNotFound)
+		return
+	}
 
 	const dst = "./works"
 	fullPath := filepath.Join(dst, brandName, workName, relPath)

@@ -20,6 +20,9 @@ type AdminRepository interface {
 	DeleteWork(ctx context.Context, brandName, workName string) error
 	ChangeWorkFields(ctx context.Context, brandName, workName string, work *entity.Works) error
 	GetWork(ctx context.Context, brandName, workName string) (entity.Works, error)
+
+	BruteCount(ctx context.Context, ip string) (int, error)
+	IncCount(ctx context.Context, ip string) error
 }
 
 type AdminService struct {

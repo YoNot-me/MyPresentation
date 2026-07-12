@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"presentator/internal/core/entity"
+	JWT "presentator/internal/features/auth/token"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -32,6 +33,16 @@ func (t *AuthTransport) AuthBrand(c *gin.Context) {
 
 	token, err := t.s.AuthUser(ctx, data, c.ClientIP())
 	if err != nil {
+
+		if errors.Is(err, entity.TooManyAttempts) {
+			response(c, entity.Response{
+				Status: http.StatusTooManyRequests,
+				Data:   "Too many requests, wait 3 minute",
+				Err:    err,
+			})
+
+			return
+		}
 
 		if errors.Is(err, entity.AlreadySigned) {
 			c.Redirect(http.StatusSeeOther, "/works")
@@ -63,13 +74,35 @@ func (t *AuthTransport) AuthBrand(c *gin.Context) {
 
 func (t *AuthTransport) Logout(c *gin.Context) {
 
-	err := t.jwt.LogOut(context.Background(), c.ClientIP())
+	cookie, err := c.Cookie("Pres-Access")
 	if err != nil {
-		t.log.Error(err.Error())
+		c.Redirect(http.StatusSeeOther, "/auth")
+		c.Abort()
+		return
+	}
+
+	token, err := t.jwt.ParseToken(cookie)
+	if err != nil {
+		t.log.Error("failed to parse token", zap.Error(err))
 
 		response(c, entity.Response{
 			Status: http.StatusInternalServerError,
 		})
+
+		c.Abort()
+		return
+	}
+
+	claims := token.Claims.(*JWT.JWT)
+	err = t.jwt.LogOut(c.Request.Context(), claims.ID)
+	if err != nil {
+		t.log.Error("failed to logout", zap.Error(err))
+
+		response(c, entity.Response{
+			Status: http.StatusInternalServerError,
+		})
+
+		c.Abort()
 		return
 	}
 

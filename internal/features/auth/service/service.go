@@ -12,7 +12,6 @@ func (s *AuthService) AuthUser(ctx context.Context, data entity.Brand, ip string
 
 	err := s.CheckData(ctx, data, ip)
 	if err != nil {
-		s.log.Error("failed to check data", zap.Error(err))
 		return "", err
 	}
 
@@ -28,6 +27,11 @@ func (s *AuthService) AuthUser(ctx context.Context, data entity.Brand, ip string
 
 	err = bcrypt.CompareHashAndPassword([]byte(hashPass), []byte(data.Password))
 	if err != nil {
+		err = s.rep.IncCount(ctx, ip)
+		if err != nil {
+			return "", err
+		}
+
 		s.log.Error("failed to compare password", zap.Error(err))
 		return "", entity.InvalidPass
 	}
@@ -42,29 +46,33 @@ func (s *AuthService) AuthUser(ctx context.Context, data entity.Brand, ip string
 
 }
 
-func (a *AuthService) CheckData(ctx context.Context, data entity.Brand, ip string) error {
+func (s *AuthService) CheckData(ctx context.Context, data entity.Brand, ip string) error {
 	if data.Name == "" {
-		a.log.Error("name is empty")
+		s.log.Error("CheckData: name is empty")
 		return entity.BadRequest
 	}
 	if data.Password == "" {
-		a.log.Error("password is empty")
+		s.log.Error("CheckData: password is empty")
 		return entity.BadRequest
 	}
 	if ip == "" {
-		a.log.Error("ip is empty")
+		s.log.Error("CheckData: ip is empty")
 		return entity.BadRequest
 	}
 
-	if ok := a.jwt.IsExist(ctx, ip); !ok {
-		a.log.Error("token already exists")
-		err := a.jwt.LogOut(ctx, ip)
-		if err != nil {
-			a.log.Error("failed to logout", zap.Error(err))
-			return err
-		}
+	if ok := s.jwt.IsExist(ctx, ip); ok {
+		s.log.Error("CheckData: token already exists")
+		return entity.AlreadySigned
+	}
 
-		return nil
+	count, err := s.rep.BruteCount(ctx, ip)
+	if err != nil {
+		s.log.Error("CheckData: failed to get count", zap.Error(err))
+		return err
+	}
+	if count > 5 {
+		s.log.Error("CheckData: too many attempts: " + ip)
+		return entity.TooManyAttempts
 	}
 
 	return nil
