@@ -74,43 +74,27 @@ func (j *ServingJWT) CreateToken(ctx context.Context, brandName, ip, role string
 	return newToken, nil
 }
 
-func (j *ServingJWT) CheckAccess(token *jwt.Token, jti string) bool {
+func (j *ServingJWT) CheckAdminAccess(token *jwt.Token, role string) bool {
 
 	claims := token.Claims.(*JWT)
 
-	if claims.ID != jti {
-		j.log.Error("invalid token: " + jti)
-		return false
-	}
-
-	return true
-}
-
-func (j *ServingJWT) CheckAdminAccess(token *jwt.Token, jti, role string) bool {
-
-	claims := token.Claims.(*JWT)
-
-	if claims.ID != jti {
-		j.log.Error("invalid token: " + jti)
-		return false
-	}
 	if claims.Role != role {
-		j.log.Error("invalid token: " + jti)
+		j.log.Error("invalid token: " + claims.ID)
 		return false
 	}
 
 	return true
 }
 
-func (j *ServingJWT) LogOut(ctx context.Context, jti string) error {
+func (j *ServingJWT) LogOut(ctx context.Context, id string) error {
 
-	if err := j.rdb.Del(ctx, jti).Err(); err != nil {
+	if err := j.rdb.Del(ctx, "sess:"+id).Err(); err != nil {
 
 		go func() {
-			j.log.Error("retry to delete token: " + jti)
-			retryErr := j.RetryDeleteToken(jti)
+			j.log.Error("retry to delete token: " + id)
+			retryErr := j.RetryDeleteToken(id)
 			if retryErr != nil {
-				j.log.Error("failed to enqueue retry: "+jti, zap.Error(retryErr))
+				j.log.Error("failed to enqueue retry: "+id, zap.Error(retryErr))
 			}
 		}()
 	}
@@ -118,7 +102,7 @@ func (j *ServingJWT) LogOut(ctx context.Context, jti string) error {
 	return nil
 }
 
-func (j *ServingJWT) RetryDeleteToken(jti string) error {
+func (j *ServingJWT) RetryDeleteToken(id string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -127,9 +111,9 @@ func (j *ServingJWT) RetryDeleteToken(jti string) error {
 
 	for i := 0; i < 3; i++ {
 
-		err := j.rdb.Del(ctx, jti).Err()
+		err := j.rdb.Del(ctx, "sess:"+id).Err()
 		if err == nil {
-			j.log.Info("token deleted: " + jti)
+			j.log.Info("token deleted: " + id)
 			return nil
 		}
 

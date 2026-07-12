@@ -4,8 +4,10 @@ import (
 	"context"
 	"os"
 	"presentator/internal/core/entity"
+	JWT "presentator/internal/features/auth/token"
 	"strings"
 
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -46,11 +48,20 @@ func (s *AdminService) AuthAdmin(ctx context.Context, ip string, req *entity.Adm
 	return token, err
 }
 
-func (s *AdminService) LogOut(ctx context.Context, ip string) error {
+func (s *AdminService) LogOut(ctx context.Context, cookie string) error {
 
-	if ip == "" {
-		return entity.BadRequest
+	token, err := s.jwt.ParseToken(cookie)
+	if err != nil {
+		s.log.Error("failed to parse token", zap.Error(err))
+		return err
 	}
 
-	return s.jwt.LogOut(ctx, ip)
+	claims := token.Claims.(*JWT.JWT)
+	err = s.jwt.LogOut(ctx, claims.ID)
+	if err != nil {
+		s.log.Error("failed to logout", zap.Error(err))
+		return err
+	}
+
+	return s.jwt.LogOut(ctx, "sess:"+claims.ID)
 }

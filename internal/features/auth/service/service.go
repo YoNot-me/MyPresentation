@@ -60,11 +60,6 @@ func (s *AuthService) CheckData(ctx context.Context, data entity.Brand, ip strin
 		return entity.BadRequest
 	}
 
-	if ok := s.jwt.IsExist(ctx, ip); ok {
-		s.log.Error("CheckData: token already exists")
-		return entity.AlreadySigned
-	}
-
 	count, err := s.rep.BruteCount(ctx, ip)
 	if err != nil {
 		s.log.Error("CheckData: failed to get count", zap.Error(err))

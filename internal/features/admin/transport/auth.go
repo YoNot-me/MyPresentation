@@ -63,8 +63,15 @@ func (a *AdminTransport) LogOut(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	err := a.srv.LogOut(ctx, c.ClientIP())
+	cookie, err := c.Cookie("Pres-Access")
 	if err != nil {
+		c.Redirect(http.StatusSeeOther, "/auth")
+		c.Abort()
+		return
+	}
+
+	logOutErr := a.srv.LogOut(ctx, cookie)
+	if logOutErr != nil {
 		a.log.Error("Cant log out: "+c.ClientIP(), zap.Error(err))
 
 		return

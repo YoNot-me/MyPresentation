@@ -30,7 +30,7 @@ type AdminTrnsprt interface {
 
 type AdminService interface {
 	AuthAdmin(ctx context.Context, ip string, req *entity.Admin) (string, error)
-	LogOut(ctx context.Context, ip string) error
+	LogOut(ctx context.Context, cookie string) error
 
 	ListAllBrands(ctx context.Context) ([]entity.BrandsResponse, error)
 	AddNewBrand(ctx context.Context, brand *entity.Brand) error
