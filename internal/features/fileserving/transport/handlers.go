@@ -72,9 +72,6 @@ func (t *FileServingTransport) GetWork(c *gin.Context) {
 
 	fullPath := filepath.Join("./works", brandName, workName, relPath)
 
-	// A path pointing at a folder holding a single file (e.g. the "preview"
-	// cover folder) resolves to that file, so the client can request
-	// /presentation/<work>/preview without knowing the file name or extension.
 	if info, statErr := os.Stat(fullPath); statErr == nil && info.IsDir() {
 		entries, readErr := os.ReadDir(fullPath)
 		if readErr != nil || len(entries) != 1 || entries[0].IsDir() {

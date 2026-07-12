@@ -24,7 +24,7 @@ func ProtectedAdmin(j *JWT.ServingJWT) gin.HandlerFunc {
 			return
 		}
 
-		ok = j.CheckAdminAccess(token, c.ClientIP(), "admin")
+		ok = j.CheckAccess(c.Request.Context(), token, c.ClientIP(), "admin")
 		if !ok {
 			c.Redirect(http.StatusSeeOther, "/auth/admin.html")
 			c.Abort()
@@ -52,7 +52,7 @@ func Protected(j *JWT.ServingJWT) gin.HandlerFunc {
 			return
 		}
 
-		ok = j.CheckAccess(token, c.ClientIP())
+		ok = j.CheckAccess(c.Request.Context(), token, c.ClientIP(), "guest")
 		if !ok {
 			c.Redirect(http.StatusSeeOther, "/auth")
 			c.Abort()

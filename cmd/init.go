@@ -42,6 +42,11 @@ func initFeatures(ctx context.Context) (
 		return nil, nil, nil, nil, err
 	}
 
+	err = os.MkdirAll("./out", 0755)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
 	file := filepath.Join(".", "out", "logger.log")
 	openFile, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
