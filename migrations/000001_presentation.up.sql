@@ -12,7 +12,7 @@ CREATE TABLE presentation.works (
     url                 TEXT            DEFAULT '',
     description         TEXT            NOT NULL DEFAULT '',
 
-    CONSTRAINT presentation_work FOREIGN KEY (brand) REFERENCES brands(name)
+    CONSTRAINT presentation_work FOREIGN KEY (brand) REFERENCES presentation.brands(name)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
     CONSTRAINT unique_brand_work UNIQUE (brand, workName)

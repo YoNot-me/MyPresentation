@@ -44,11 +44,6 @@ func (t *AuthTransport) AuthBrand(c *gin.Context) {
 			return
 		}
 
-		if errors.Is(err, entity.AlreadySigned) {
-			c.Redirect(http.StatusSeeOther, "/works")
-			return
-		}
-
 		t.log.Error(err.Error())
 		response(c, entity.Response{
 			Status: http.StatusUnauthorized,

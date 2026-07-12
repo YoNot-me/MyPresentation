@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"path/filepath"
 	"presentator/internal/core/entity"
@@ -23,11 +22,7 @@ func initFeatures(ctx context.Context) (
 	error,
 ) {
 
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Print("Error loading .env file")
-		return nil, nil, nil, nil, err
-	}
+	_ = godotenv.Load(".env")
 
 	env := entity.Config{
 		Addr:      os.Getenv("PRES_ADDR"),
