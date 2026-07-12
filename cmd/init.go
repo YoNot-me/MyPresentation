@@ -30,6 +30,7 @@ func initFeatures(ctx context.Context) (
 		JWTKey:    os.Getenv("PRES_JWT_SECRET"),
 		RedisPass: os.Getenv("REDIS_PASSWORD"),
 		RedisAddr: os.Getenv("REDIS_ADDR"),
+		Issuer:    os.Getenv("PRES_JWT_ISSUER"),
 	}
 
 	db, err := repository.OpenDatabase(ctx, env.DBURL)

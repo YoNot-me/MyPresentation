@@ -6,6 +6,7 @@ type Config struct {
 	JWTKey    string
 	RedisPass string
 	RedisAddr string
+	Issuer    string
 }
 
 type Admin struct {

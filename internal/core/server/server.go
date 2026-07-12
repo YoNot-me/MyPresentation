@@ -44,8 +44,8 @@ func ServerInit(
 				180*time.Second,
 				`{"error":"request timeout"}'`,
 			),
-			ReadTimeout:  10 * time.Second,
-			WriteTimeout: 180 * time.Second,
+			ReadTimeout:  60 * 2 * time.Second,
+			WriteTimeout: 60 * 3 * time.Second,
 		},
 		DB:     db,
 		Logger: openLog,
@@ -71,7 +71,7 @@ func route(
 
 	//basic
 	r.Handle(http.MethodGet, "/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/works")
+		c.Redirect(http.StatusMovedPermanently, "/works/serve")
 	})
 
 	//auth

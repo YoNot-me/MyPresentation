@@ -57,12 +57,10 @@ port-forwarder-close:
 
 run:
 	@$(MAKE) compose-up
-	@$(MAKE) port-forwarder
 	@$(MAKE) migrate-up
 	@echo "server started localhost:8080"
 
 clean:
-	@$(MAKE) port-forwarder-close
 	@$(MAKE) compose-clean-env
 
 logs-db:

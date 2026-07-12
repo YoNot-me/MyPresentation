@@ -17,10 +17,20 @@ func (s *AuthService) AuthUser(ctx context.Context, data entity.Brand, ip string
 
 	hashPass, err := s.rep.GetPass(ctx, data.Name)
 	if err != nil {
+		err = s.rep.IncCount(ctx, ip)
+		if err != nil {
+			return "", err
+		}
+
 		s.log.Error("failed to get password", zap.Error(err))
 		return "", err
 	}
 	if hashPass == "" {
+		err = s.rep.IncCount(ctx, ip)
+		if err != nil {
+			return "", err
+		}
+
 		s.log.Error("password not found")
 		return "", entity.InternalError
 	}
