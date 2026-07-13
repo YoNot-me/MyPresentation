@@ -53,7 +53,7 @@ func (j *ServingJWT) CreateToken(ctx context.Context, brandName, ip, role string
 		Role:      role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        jti,
-			Issuer:    "YoNot",
+			Issuer:    j.env.Issuer,
 			Subject:   ip,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(12 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

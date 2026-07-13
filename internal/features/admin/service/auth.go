@@ -57,11 +57,6 @@ func (s *AdminService) LogOut(ctx context.Context, cookie string) error {
 	}
 
 	claims := token.Claims.(*JWT.JWT)
-	err = s.jwt.LogOut(ctx, claims.ID)
-	if err != nil {
-		s.log.Error("failed to logout", zap.Error(err))
-		return err
-	}
 
-	return s.jwt.LogOut(ctx, "sess:"+claims.ID)
+	return s.jwt.LogOut(ctx, claims.ID)
 }
