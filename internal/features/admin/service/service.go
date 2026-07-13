@@ -351,14 +351,14 @@ func (s *AdminService) ChangeWorkFields(
 
 	if rawJSON != "" {
 		s.log.Info("rawJSON",
-			zap.String("value", rawJSON),
+			zap.String("value", "rawJSON"),
 			zap.Int("len", len(rawJSON)),
 		)
+
 		if marshalErr := json.Unmarshal([]byte(rawJSON), &newInfo); marshalErr != nil {
 			s.log.Error("failed to unmarshal work data", zap.Error(marshalErr))
 			return marshalErr
 		}
-
 		if err = s.rep.ChangeWorkFields(ctx, brandName, workName, &newInfo); err != nil {
 			s.log.Error("failed to change work fields", zap.Error(err))
 			return err

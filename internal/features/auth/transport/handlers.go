@@ -18,7 +18,7 @@ func (t *AuthTransport) Auth(c *gin.Context) {
 
 func (t *AuthTransport) AuthBrand(c *gin.Context) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
 	data := entity.Brand{}

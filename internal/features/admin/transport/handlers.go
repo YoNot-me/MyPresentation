@@ -154,7 +154,8 @@ func (a *AdminTransport) ListAllBrandWorks(c *gin.Context) {
 	if err != nil {
 		a.log.Error("ListAllWorks error", zap.Error(err))
 		response(c, entity.Response{
-			Err: err,
+			Data: []entity.WorksResponse{},
+			Err:  err,
 		})
 		return
 	}
