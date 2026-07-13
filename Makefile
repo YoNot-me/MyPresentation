@@ -49,12 +49,6 @@ migrate-action:
     		-database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@presentation-postgres:5432/${POSTGRES_DB}?sslmode=disable \
     		"$(action)"
 
-port-forwarder:
-	@docker compose up -d port-forwarder
-
-port-forwarder-close:
-	@docker compose down port-forwarder
-
 run:
 	@$(MAKE) compose-up
 	@$(MAKE) migrate-up
@@ -68,6 +62,3 @@ logs-db:
 
 run-local:
 	@go run ./cmd
-
-logs-port:
-	docker logs video-postgres-port-forwarder
