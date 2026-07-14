@@ -12,7 +12,8 @@ func response(c *gin.Context, res entity.Response) {
 	if res.Status == 0 {
 		if res.Err != nil {
 			code := entity.FindStatus(res.Err)
-			c.JSON(code, res.Data)
+
+			c.JSON(code, res.Err.Error())
 			return
 		}
 

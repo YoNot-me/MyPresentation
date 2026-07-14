@@ -2,12 +2,10 @@ package server
 
 import (
 	"net/http"
-	"presentator/internal/features/auth/token"
-	"time"
-
 	"presentator/internal/core/entity"
 	"presentator/internal/core/middleware"
 	adminTransport "presentator/internal/features/admin/transport"
+	"presentator/internal/features/auth/token"
 	authTransport "presentator/internal/features/auth/transport"
 	fileservingTransport "presentator/internal/features/fileserving/transport"
 )
@@ -36,22 +34,16 @@ func ServerInit(
 
 	mux := route(fileServing, auth, admin, jwt)
 
-	Server := &Server{
+	srv := &Server{
 		Http: &http.Server{
-			Addr: env.Addr,
-			Handler: http.TimeoutHandler(
-				mux,
-				180*time.Second,
-				`{"error":"request timeout"}'`,
-			),
-			ReadTimeout:  60 * 2 * time.Second,
-			WriteTimeout: 60 * 3 * time.Second,
+			Addr:    env.Addr,
+			Handler: mux,
 		},
 		DB:     db,
 		Logger: openLog,
 	}
 
-	return Server, nil
+	return srv, nil
 }
 
 func route(
@@ -67,7 +59,15 @@ func route(
 
 	//middleware
 	r.Use(gin.Recovery())
+	r.Use(gin.Logger())
 	r.Use(middleware.MaximumSize())
+
+	//healthCheck
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+		})
+	})
 
 	//basic
 	r.Handle(http.MethodGet, "/", func(c *gin.Context) {

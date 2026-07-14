@@ -61,4 +61,5 @@ logs-db:
 	docker logs presentation-postgres
 
 run-local:
+	@$(MAKE) run
 	@go run ./cmd

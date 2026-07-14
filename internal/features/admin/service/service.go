@@ -3,6 +3,7 @@ package adminService
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -156,17 +157,24 @@ func (s *AdminService) ListAllWorks(ctx context.Context, brandName string) ([]en
 		return nil, err
 	}
 
-	if work == nil {
-		s.log.Error("works not found")
-		return nil, entity.NotFound
-	}
-
 	return work, nil
 }
 
 func (s *AdminService) AddNewWork(ctx context.Context, brandName string, req *entity.Works, c *gin.Context) (int, error) {
 
 	if brandName == "" || req.WorkName == "" {
+		return 0, entity.BadRequest
+	}
+
+	ok, err := s.rep.IsWorkExist(ctx, req.Brand, req.WorkName)
+	if err != nil {
+		s.log.Error("failed to check if work exists", zap.Error(err))
+		return 0, err
+	}
+
+	if ok {
+		s.log.Error("work already exists", zap.Error(errors.New(
+			req.Brand+" "+req.WorkName+" already exists")))
 		return 0, entity.BadRequest
 	}
 

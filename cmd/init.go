@@ -7,6 +7,7 @@ import (
 	"presentator/internal/core/entity"
 	"presentator/internal/core/logger"
 	"presentator/internal/core/repository"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -58,5 +59,21 @@ func initFeatures(ctx context.Context) (
 		Protocol: 2,
 	})
 
+	err = pingRdb(rdb)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
 	return &env, db, logFile, rdb, nil
+}
+
+func pingRdb(rdb *redis.Client) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		return err
+	}
+
+	return nil
 }

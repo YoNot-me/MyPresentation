@@ -2,6 +2,7 @@ package adminService
 
 import (
 	"context"
+	"errors"
 	"os"
 	"presentator/internal/core/entity"
 	JWT "presentator/internal/features/auth/token"
@@ -17,7 +18,7 @@ func (s *AdminService) AuthAdmin(ctx context.Context, ip string, req *entity.Adm
 	if err != nil {
 		return "", err
 	}
-	if count > 5 {
+	if count >= 5 {
 		return "", entity.TooManyAttempts
 	}
 
@@ -29,15 +30,27 @@ func (s *AdminService) AuthAdmin(ctx context.Context, ip string, req *entity.Adm
 	}
 
 	if !strings.EqualFold(req.Login, login) {
+		incErr := s.rep.IncCount(ctx, ip)
+		if incErr != nil {
+			s.log.Error("failed to equal login: ",
+				zap.Error(errors.New("login not equal: "+req.Login+"/"+incErr.Error())))
+
+			return "", entity.InvalidLogin
+		}
+
 		return "", entity.InvalidLogin
 	}
+
 	if compareErr := bcrypt.CompareHashAndPassword([]byte(password), []byte(req.Password)); compareErr != nil {
 		incErr := s.rep.IncCount(ctx, ip)
 		if incErr != nil {
-			return "", incErr
+			s.log.Error("failed to compare pass and inc count: ",
+				zap.Error(errors.New(compareErr.Error()+"/"+incErr.Error())))
+
+			return "", entity.InvalidPass
 		}
 
-		return "", compareErr
+		return "", entity.InvalidPass
 	}
 
 	token, err := s.jwt.CreateToken(ctx, "", ip, "admin")

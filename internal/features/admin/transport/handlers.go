@@ -168,7 +168,16 @@ func (a *AdminTransport) ListAllBrandWorks(c *gin.Context) {
 
 func (a *AdminTransport) AddNewWork(c *gin.Context) {
 
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+	rc := http.NewResponseController(c.Writer)
+	if err := rc.SetReadDeadline(time.Now().Add(5 * time.Minute)); err != nil {
+		a.log.Error("Err set read deadline", zap.Error(err))
+		response(c, entity.Response{
+			Err: err,
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Minute)
 	defer cancel()
 
 	rawJSON := c.PostForm("data")
@@ -268,11 +277,25 @@ func (a *AdminTransport) ListWorkImages(c *gin.Context) {
 
 func (a *AdminTransport) ServingWork(c *gin.Context) {
 
+	rc := http.NewResponseController(c.Writer)
+	if err := rc.SetWriteDeadline(time.Now().Add(5 * time.Minute)); err != nil {
+		a.log.Error("Err set read deadline", zap.Error(err))
+		response(c, entity.Response{
+			Err: err,
+		})
+		return
+	}
+
 	brandName := filepath.Clean(c.Param("brandName"))
 	workName := filepath.Clean(c.Param("workName"))
 	relPath := filepath.Clean(c.Param("filepath"))
-	if strings.Contains(relPath, "..") {
-		c.Status(http.StatusNotFound)
+
+	err := validateSegment(brandName, workName, relPath)
+	if err != nil {
+		a.log.Error("Err validate segment", zap.Error(err))
+		response(c, entity.Response{
+			Err: err,
+		})
 		return
 	}
 
@@ -289,4 +312,17 @@ func (a *AdminTransport) ServingWork(c *gin.Context) {
 	}
 
 	c.File(fullPath)
+}
+
+func validateSegment(brandName, workName, relPath string) error {
+
+	root, _ := filepath.Abs("./works")
+	full := filepath.Join(root, brandName, workName, relPath)
+
+	full, _ = filepath.Abs(full)
+	if !strings.HasPrefix(full, root+string(os.PathSeparator)) {
+		return entity.ErrPathTraversal
+	}
+
+	return nil
 }

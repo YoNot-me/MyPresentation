@@ -8,22 +8,28 @@ import (
 )
 
 var (
-	NotFound        = errors.New("work folder not found")
-	DBError         = errors.New("db error")
-	EnvNotLoaded    = errors.New("env not loaded")
-	InvalidToken    = errors.New("invalid token")
-	InvalidLogin    = errors.New("invalid login")
-	InvalidPass     = errors.New("invalid password")
-	InternalError   = errors.New("internal error")
-	BadRequest      = errors.New("bad request")
-	AlreadyExist    = errors.New("already exist")
-	AlreadySigned   = errors.New("already signed")
-	TooManyAttempts = errors.New("too many attempts")
+	NotFound         = errors.New("work folder not found")
+	DBError          = errors.New("db error")
+	EnvNotLoaded     = errors.New("env not loaded")
+	InvalidToken     = errors.New("invalid token")
+	InvalidLogin     = errors.New("invalid login")
+	InvalidPass      = errors.New("invalid password")
+	InternalError    = errors.New("internal error")
+	BadRequest       = errors.New("bad request")
+	AlreadyExist     = errors.New("already exist")
+	AlreadySigned    = errors.New("already signed")
+	TooManyAttempts  = errors.New("too many attempts")
+	FilesNotChanged  = errors.New("files not changed")
+	ErrPathTraversal = errors.New("path traversal")
 )
 
 func FindStatus(err error) int {
 	switch {
 	case err == nil:
+		return http.StatusOK
+	case errors.Is(err, ErrPathTraversal):
+		return http.StatusForbidden
+	case errors.Is(err, FilesNotChanged):
 		return http.StatusOK
 	case errors.Is(err, TooManyAttempts):
 		return http.StatusTooManyRequests

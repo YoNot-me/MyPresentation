@@ -314,12 +314,38 @@ body {
 }
 
 .work-card {
+  position: relative;
   background: var(--card);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   padding: 18px;
   display: flex;
   flex-direction: column;
+}
+
+.work-delete {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: background 0.15s ease;
+}
+
+.work-delete:hover {
+  background: #d43a3a;
 }
 
 .thumb {

@@ -30,6 +30,7 @@ func (a *AdminTransport) AuthAdmin(c *gin.Context) {
 
 	token, err := a.srv.AuthAdmin(ctx, c.ClientIP(), &req)
 	if err != nil {
+
 		if errors.Is(err, entity.TooManyAttempts) {
 			a.log.Error("auth admin", zap.Error(err))
 			response(c, entity.Response{
@@ -37,6 +38,7 @@ func (a *AdminTransport) AuthAdmin(c *gin.Context) {
 			})
 			return
 		}
+
 		a.log.Error("auth admin", zap.Error(err))
 		response(c, entity.Response{
 			Err: err,
@@ -65,7 +67,7 @@ func (a *AdminTransport) LogOut(c *gin.Context) {
 
 	cookie, err := c.Cookie("Pres-Access")
 	if err != nil {
-		c.Redirect(http.StatusSeeOther, "/auth")
+		c.Redirect(http.StatusSeeOther, "/auth/admin.html")
 		c.Abort()
 		return
 	}
@@ -78,5 +80,5 @@ func (a *AdminTransport) LogOut(c *gin.Context) {
 	}
 
 	a.log.Info("Admin logged out", zap.String("IP: ", c.ClientIP()))
-	c.Redirect(http.StatusSeeOther, "/admin/auth")
+	c.Redirect(http.StatusSeeOther, "/auth/admin.html")
 }

@@ -17,12 +17,6 @@ func (t *FileServingTransport) ServeHTML(c *gin.Context) {
 	c.File("./public/presentation/index.html")
 }
 
-func (t *FileServingTransport) Basic(c *gin.Context) {
-
-	t.log.Info("New Guest: ", zap.String("IP: ", c.ClientIP()))
-	c.Redirect(http.StatusSeeOther, "/auth")
-}
-
 func (t *FileServingTransport) ListWorkFiles(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
@@ -56,14 +50,19 @@ func (t *FileServingTransport) GetWork(c *gin.Context) {
 
 	workName := filepath.Clean(c.Param("name"))
 	relPath := filepath.Clean(c.Param("filepath"))
-	if strings.Contains(relPath, "..") {
-		c.Status(http.StatusNotFound)
-		return
-	}
 
 	brandName, err := t.srv.GetName(c)
 	if err != nil {
 		t.log.Error("err get brand name", zap.Error(err))
+		response(c, entity.Response{
+			Err: err,
+		})
+		return
+	}
+
+	err = validateSegment(brandName, workName, relPath)
+	if err != nil {
+		t.log.Error("Err validate segment", zap.Error(err))
 		response(c, entity.Response{
 			Err: err,
 		})
@@ -110,4 +109,17 @@ func (t *FileServingTransport) ListWorkImages(c *gin.Context) {
 		Status: http.StatusOK,
 		Data:   files,
 	})
+}
+
+func validateSegment(brandName, workName, relPath string) error {
+
+	root, _ := filepath.Abs("./works")
+	full := filepath.Join(root, brandName, workName, relPath)
+
+	full, _ = filepath.Abs(full)
+	if !strings.HasPrefix(full, root+string(os.PathSeparator)) {
+		return entity.ErrPathTraversal
+	}
+
+	return nil
 }

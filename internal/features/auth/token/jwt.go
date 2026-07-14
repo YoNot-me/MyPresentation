@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"presentator/internal/core/entity"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -89,23 +91,27 @@ func (j *ServingJWT) CheckAdminAccess(token *jwt.Token, role string) bool {
 func (j *ServingJWT) LogOut(ctx context.Context, id string) error {
 
 	if err := j.rdb.Del(ctx, "sess:"+id).Err(); err != nil {
+		if errors.Is(err, redis.Nil) {
+			j.log.Error("token not found: " + id)
+			return entity.NotFound
+		}
 
-		go func() {
-			j.log.Error("retry to delete token: " + id)
-			retryErr := j.RetryDeleteToken(id)
-			if retryErr != nil {
-				j.log.Error("failed to enqueue retry: "+id, zap.Error(retryErr))
-			}
-		}()
+		j.log.Error("retry to delete token: " + id)
+		retryErr := j.RetryDeleteToken(ctx, id)
+		if retryErr != nil {
+			j.log.Error("failed to enqueue retry: "+id, zap.Error(retryErr))
+		}
+		if retryErr == nil {
+			return nil
+		}
+
+		return err
 	}
 
 	return nil
 }
 
-func (j *ServingJWT) RetryDeleteToken(id string) error {
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+func (j *ServingJWT) RetryDeleteToken(ctx context.Context, id string) error {
 
 	var lastErr error
 
@@ -114,6 +120,9 @@ func (j *ServingJWT) RetryDeleteToken(id string) error {
 		err := j.rdb.Del(ctx, "sess:"+id).Err()
 		if err == nil {
 			j.log.Info("token deleted: " + id)
+			return nil
+		}
+		if errors.Is(err, redis.Nil) {
 			return nil
 		}
 
