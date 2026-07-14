@@ -304,6 +304,23 @@
     return true;
   }
 
+  // DELETE /admin/:brand/remove/:work — removes the work's DB row and its files.
+  // The server answers with a 303 redirect to /admin/:brand/works on success.
+  async function deleteWork(brand, work) {
+    const url =
+        "/admin/" +
+        encodeURIComponent(brand) +
+        "/remove/" +
+        encodeURIComponent(work);
+
+    const res = await guardedFetch(url, { method: "DELETE" });
+    if (!res.ok && !res.redirected) {
+      alert("Не удалось удалить работу");
+      return false;
+    }
+    return true;
+  }
+
   function initWorks() {
     const params = new URLSearchParams(window.location.search);
     const brand = params.get("brand");
@@ -384,6 +401,19 @@
         const card = document.createElement("article");
         card.className = "work-card";
 
+        const del = document.createElement("button");
+        del.className = "work-delete";
+        del.type = "button";
+        del.title = "Удалить работу";
+        del.setAttribute("aria-label", "Удалить работу");
+        del.textContent = "×";
+        del.addEventListener("click", async (e) => {
+          e.preventDefault();
+          if (!confirm('Удалить работу "' + (name || "") + '"? Действие необратимо.'))
+            return;
+          if (await deleteWork(brand, name)) load();
+        });
+
         const thumb = document.createElement("a");
         thumb.className = "thumb";
         thumb.href =
@@ -440,7 +470,7 @@
             })
         );
 
-        card.append(thumb, title, desc, actions);
+        card.append(del, thumb, title, desc, actions);
         gridEl.appendChild(card);
       }
     }

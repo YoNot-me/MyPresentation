@@ -65,10 +65,12 @@ func main() {
 
 	go func() {
 		srv.Logger.Info("Server starting")
+
 		if err = srv.Run(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			cancel()
 			srv.Logger.Info("Closing server", zap.Error(err))
-			os.Exit(1)
+
+			quit <- os.Interrupt
 		}
 	}()
 

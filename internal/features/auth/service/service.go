@@ -2,6 +2,7 @@ package authService
 
 import (
 	"context"
+	"errors"
 	"presentator/internal/core/entity"
 
 	"go.uber.org/zap"
@@ -15,15 +16,19 @@ func (s *AuthService) AuthUser(ctx context.Context, data entity.Brand, ip string
 		return "", err
 	}
 
-	hashPass, err := s.rep.GetPass(ctx, data.Name)
-	if err != nil {
-		err = s.rep.IncCount(ctx, ip)
-		if err != nil {
-			return "", err
+	hashPass, getPassErr := s.rep.GetPass(ctx, data.Name)
+	if getPassErr != nil {
+		incErr := s.rep.IncCount(ctx, ip)
+		if incErr != nil {
+
+			s.log.Error("failed to get password and inc count",
+				zap.Error(errors.New(getPassErr.Error()+"/"+incErr.Error())))
+
+			return "", entity.BadRequest
 		}
 
-		s.log.Error("failed to get password", zap.Error(err))
-		return "", err
+		s.log.Error("failed to get password", zap.Error(getPassErr))
+		return "", getPassErr
 	}
 	if hashPass == "" {
 		err = s.rep.IncCount(ctx, ip)
@@ -35,14 +40,18 @@ func (s *AuthService) AuthUser(ctx context.Context, data entity.Brand, ip string
 		return "", entity.InternalError
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(hashPass), []byte(data.Password))
-	if err != nil {
+	compareErr := bcrypt.CompareHashAndPassword([]byte(hashPass), []byte(data.Password))
+	if compareErr != nil {
 		err = s.rep.IncCount(ctx, ip)
 		if err != nil {
-			return "", err
+
+			s.log.Error("failed to compare password and inc count",
+				zap.Error(errors.New(compareErr.Error()+"/"+err.Error())))
+
+			return "", entity.InvalidPass
 		}
 
-		s.log.Error("failed to compare password", zap.Error(err))
+		s.log.Error("failed to compare password", zap.Error(compareErr))
 		return "", entity.InvalidPass
 	}
 
@@ -75,7 +84,7 @@ func (s *AuthService) CheckData(ctx context.Context, data entity.Brand, ip strin
 		s.log.Error("CheckData: failed to get count", zap.Error(err))
 		return err
 	}
-	if count > 5 {
+	if count >= 5 {
 		s.log.Error("CheckData: too many attempts: " + ip)
 		return entity.TooManyAttempts
 	}

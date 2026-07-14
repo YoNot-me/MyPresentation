@@ -224,7 +224,7 @@ func (ar *AdminRepo) ChangeWorkFields(
 	}
 
 	if res.RowsAffected() == 0 {
-		return entity.BadRequest
+		return entity.FilesNotChanged
 	}
 
 	return nil
@@ -249,6 +249,18 @@ func (ar *AdminRepo) GetWork(ctx context.Context, brandName, workName string) (e
 	}
 
 	return work, nil
+}
+
+func (ar *AdminRepo) IsWorkExist(ctx context.Context, brandName, workName string) (bool, error) {
+
+	const query = "SELECT EXISTS(SELECT 1 FROM presentation.works WHERE brand = $1 AND workName = $2)"
+	var ok bool
+
+	if err := ar.db.QueryRow(ctx, query, brandName, workName).Scan(&ok); err != nil {
+		return false, err
+	}
+
+	return ok, nil
 }
 
 func (ar *AdminRepo) BruteCount(ctx context.Context, ip string) (int, error) {

@@ -1,1 +1,7 @@
 out
+Makefile
+README.md
+.gocache
+.DS_Store
+works
+logger.log
