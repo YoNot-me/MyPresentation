@@ -12,15 +12,16 @@ compose-down:
 	@docker compose down
 
 clean-env:
-
 	@read -p "Clean all volumes files env? [Y/N]: " answ; \
 	if [ "$$answ" = "y" ] || [ "$$answ" = "Y" ]; then \
 		docker compose down --rmi local -v --remove-orphans && \
-		rm -rf out/pgdata && \
+		rm -rf out/pgdata out/works out/applogs out/logger.log && \
 		echo "Success"; \
 	else \
 		echo "Canceled"; \
 	fi
+
+
 
 migrate-create:
 	@if [ -z "$(seq)" ]; then \
