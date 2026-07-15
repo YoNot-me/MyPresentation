@@ -38,7 +38,7 @@ type AdminService interface {
 	DeleteBrand(ctx context.Context, brandName string) error
 	ChangeBrandPassword(ctx context.Context, brand *entity.Brand) error
 
-	AddNewWork(ctx context.Context, brandName string, req *entity.Works, c *gin.Context) (int, error)
+	AddNewWork(ctx context.Context, req *entity.Works, c *gin.Context) (int, error)
 	ListAllWorks(ctx context.Context, brandName string) ([]entity.WorksResponse, error)
 	DeleteWork(ctx context.Context, brandName, workName string) error
 	ChangeWorkFields(ctx context.Context, brandName, workName string, c *gin.Context) error

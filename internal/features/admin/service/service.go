@@ -160,31 +160,29 @@ func (s *AdminService) ListAllWorks(ctx context.Context, brandName string) ([]en
 	return work, nil
 }
 
-func (s *AdminService) AddNewWork(ctx context.Context, brandName string, req *entity.Works, c *gin.Context) (int, error) {
+func (s *AdminService) AddNewWork(ctx context.Context, req *entity.Works, c *gin.Context) (int, error) {
 
-	if brandName == "" || req.WorkName == "" {
+	if req.Brand == "" || req.WorkName == "" {
 		return 0, entity.BadRequest
 	}
 
 	ok, err := s.rep.IsWorkExist(ctx, req.Brand, req.WorkName)
 	if err != nil {
 		s.log.Error("failed to check if work exists", zap.Error(err))
-		return 0, err
+		return 0, entity.InternalError
 	}
-
 	if ok {
 		s.log.Error("work already exists", zap.Error(errors.New(
 			req.Brand+" "+req.WorkName+" already exists")))
 		return 0, entity.BadRequest
 	}
 
-	dir := filepath.Join(dst, brandName, req.WorkName)
+	dir := filepath.Join(dst, req.Brand, req.WorkName)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		s.log.Error("failed to create directory", zap.Error(err))
 		return 0, err
 	}
-
-	previewDir := filepath.Join(dst, brandName, req.WorkName, "preview")
+	previewDir := filepath.Join(dst, req.Brand, req.WorkName, "preview")
 	if err := os.MkdirAll(previewDir, 0755); err != nil {
 		s.log.Error("failed to create preview directory", zap.Error(err))
 		return 0, err
@@ -237,12 +235,16 @@ func (s *AdminService) AddNewWork(ctx context.Context, brandName string, req *en
 		return 0, entity.BadRequest
 	}
 
-	req.Brand = brandName
-
 	if err = s.rep.AddNewWork(ctx, req); err != nil {
+		if errors.Is(err, entity.AlreadyExist) {
+			return 0, entity.AlreadyExist
+		}
+
 		if deleteErr := s.DeleteWork(ctx, req.Brand, req.WorkName); deleteErr != nil {
 			s.log.Error("failed to delete work", zap.Error(deleteErr))
+			return 0, entity.InternalError
 		}
+
 		s.log.Error("failed to add new work", zap.Error(err))
 		return 0, err
 	}
@@ -314,11 +316,8 @@ func (s *AdminService) DeleteWork(ctx context.Context, brandName, workName strin
 	return nil
 }
 
-func (s *AdminService) ChangeWorkFields(
-	ctx context.Context,
-	brandName, workName string,
-	c *gin.Context,
-) error {
+func (s *AdminService) ChangeWorkFields(ctx context.Context, brandName, workName string,
+	c *gin.Context) error {
 
 	if workName == "" {
 		s.log.Error("work name is empty")
@@ -335,69 +334,85 @@ func (s *AdminService) ChangeWorkFields(
 		return err
 	}
 
-	if previewFiles := form.File["preview"]; len(previewFiles) > 0 {
-		previewFile := previewFiles[0]
-
-		previewDir := filepath.Join(dst, brandName, workName, "preview")
-		if err = os.MkdirAll(previewDir, 0755); err != nil {
-			s.log.Error("failed to create preview directory", zap.Error(err))
+	rawJSON := c.PostForm("data")
+	newInfo := entity.Works{}
+	if rawJSON != "" {
+		if err = json.Unmarshal([]byte(rawJSON), &newInfo); err != nil {
+			s.log.Error("failed to unmarshal work data", zap.Error(err))
 			return err
-		}
-
-		ext := strings.ToLower(filepath.Ext(previewFile.Filename))
-		if isAllowedImageExt(ext) {
-
-			previewName := "preview" + ext
-			previewPath := filepath.Join(previewDir, previewName)
-
-			_ = c.SaveUploadedFile(previewFile, previewPath)
 		}
 	}
 
-	rawJSON := c.PostForm("data")
-	newInfo := entity.Works{}
+	renamed := newInfo.WorkName != "" && newInfo.WorkName != workName
+	if renamed {
 
-	if rawJSON != "" {
-		s.log.Info("rawJSON",
-			zap.String("value", "rawJSON"),
-			zap.Int("len", len(rawJSON)),
-		)
+		s.log.Info("renaming work folder :349")
 
-		if marshalErr := json.Unmarshal([]byte(rawJSON), &newInfo); marshalErr != nil {
-			s.log.Error("failed to unmarshal work data", zap.Error(marshalErr))
-			return marshalErr
-		}
-		if err = s.rep.ChangeWorkFields(ctx, brandName, workName, &newInfo); err != nil {
-			s.log.Error("failed to change work fields", zap.Error(err))
+		if err = s.RenameFolders(brandName, workName, newInfo.WorkName); err != nil {
+			s.log.Error("failed to rename work folder", zap.Error(err))
 			return err
 		}
 	}
 
 	currentWorkName := workName
-	if newInfo.WorkName != "" {
+	if renamed {
 		currentWorkName = newInfo.WorkName
 	}
 
-	workInfo, err := s.rep.GetWork(ctx, brandName, currentWorkName)
-	if err != nil {
-		s.log.Error("failed to get work", zap.Error(err))
-		return err
+	if rawJSON != "" {
+
+		s.log.Info("changing work fields :362")
+
+		if err = s.rep.ChangeWorkFields(ctx, brandName, workName, &newInfo); err != nil {
+			s.log.Error("failed to change work fields", zap.Error(err))
+
+			if renamed {
+				if rbErr := s.RenameFolders(brandName, newInfo.WorkName, workName); rbErr != nil {
+					s.log.Error("failed to rollback folder rename after db error",
+						zap.Error(rbErr))
+					return fmt.Errorf("change failed: %w; rollback also failed: %v", err, rbErr)
+				}
+			}
+
+			s.log.Error("failed to change work fields :377")
+			return err
+		}
 	}
 
-	if workName != newInfo.WorkName {
-		if renameErr := s.RenameFolders(brandName, workName, newInfo.WorkName); renameErr != nil {
-			rollBack := entity.Works{
-				Brand:    brandName,
-				WorkName: workName,
+	if previewFiles := form.File["preview"]; len(previewFiles) > 0 {
+		previewFile := previewFiles[0]
+
+		s.log.Info("changing preview file :385")
+
+		ext := strings.ToLower(filepath.Ext(previewFile.Filename))
+		if isAllowedImageExt(ext) {
+			s.log.Info("changing preview file :389")
+			previewDir := filepath.Join(dst, brandName, currentWorkName, "preview")
+
+			if err = os.MkdirAll(previewDir, 0755); err != nil {
+				s.log.Error("failed to create preview directory", zap.Error(err))
+				return err
 			}
 
-			rollbackErr := s.rep.ChangeWorkFields(ctx, workInfo.Brand, workInfo.WorkName, &rollBack)
-			if rollbackErr != nil {
-				s.log.Error("failed to rollback work fields", zap.Error(rollbackErr))
-				return rollbackErr
+			entr, readErr := os.ReadDir(previewDir)
+			if readErr == nil {
+				s.log.Info("removing preview files :399")
+
+				for _, v := range entr {
+					if err = os.Remove(filepath.Join(previewDir, v.Name())); err != nil {
+						s.log.Error("failed to remove preview file", zap.Error(err))
+						return err
+					}
+				}
 			}
 
-			return renameErr
+			previewPath := filepath.Join(previewDir, "preview"+ext)
+			if saveErr := c.SaveUploadedFile(previewFile, previewPath); saveErr != nil {
+				s.log.Error("failed to save preview file", zap.Error(saveErr))
+				return saveErr
+			}
+
+			return nil
 		}
 	}
 
@@ -407,6 +422,8 @@ func (s *AdminService) ChangeWorkFields(
 func (s *AdminService) RenameFolders(brandName, workName string, newWorkName string) error {
 
 	if newWorkName != "" {
+		s.log.Info("renaming work folder :418")
+
 		err := os.Rename(
 			fmt.Sprintf("%s/%s/%s", dst, brandName, workName),
 			fmt.Sprintf("%s/%s/%s", dst, brandName, newWorkName),

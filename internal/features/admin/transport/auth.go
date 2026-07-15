@@ -12,7 +12,7 @@ import (
 )
 
 func (a *AdminTransport) MainAdmin(c *gin.Context) {
-	c.Redirect(http.StatusFound, "auth/admin.html")
+	c.Redirect(http.StatusFound, "/auth/admin.html")
 }
 
 func (a *AdminTransport) AuthAdmin(c *gin.Context) {
@@ -57,7 +57,7 @@ func (a *AdminTransport) AuthAdmin(c *gin.Context) {
 	)
 
 	a.log.Info("Admin logged in", zap.String("IP: ", c.ClientIP()))
-	c.Redirect(http.StatusFound, "admin/brands")
+	c.Redirect(http.StatusFound, "/admin/brands")
 }
 
 func (a *AdminTransport) LogOut(c *gin.Context) {
