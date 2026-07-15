@@ -69,9 +69,28 @@ services:
       - PRES_JWT_ISSUER=${PRES_JWT_ISSUER}
       - PRES_ADMIN_LOGIN=${PRES_ADMIN_LOGIN}
       - PRES_ADMIN_PASSWORD=${PRES_ADMIN_PASSWORD}
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     volumes:
       - ./out/works:/app/works
       - ./out/applogs:/app/out
     restart: unless-stopped
+
+  caddy:
+      image: caddy:2-alpine
+      container_name: presentation-caddy
+      depends_on:
+        app:
+          condition: service_healthy
+      ports:
+        - "80:80"
+        - "443:443"
+      volumes:
+        - ./Caddyfile:/etc/caddy/Caddyfile:ro
+        - caddy_data:/data
+        - caddy_config:/config
+      restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
