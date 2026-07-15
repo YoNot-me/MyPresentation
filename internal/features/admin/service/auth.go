@@ -16,9 +16,11 @@ func (s *AdminService) AuthAdmin(ctx context.Context, ip string, req *entity.Adm
 
 	count, err := s.rep.BruteCount(ctx, ip)
 	if err != nil {
+		s.log.Error("failed to get brute count: ", zap.Error(err))
 		return "", err
 	}
 	if count >= 5 {
+		s.log.Error("too many attempts")
 		return "", entity.TooManyAttempts
 	}
 
@@ -26,10 +28,13 @@ func (s *AdminService) AuthAdmin(ctx context.Context, ip string, req *entity.Adm
 	password := os.Getenv("PRES_ADMIN_PASSWORD")
 
 	if login == "" || password == "" {
+		s.log.Error("failed to load env")
 		return "", entity.EnvNotLoaded
 	}
 
 	if !strings.EqualFold(req.Login, login) {
+		s.log.Error("failed to equal login: ", zap.String("login", req.Login))
+
 		incErr := s.rep.IncCount(ctx, ip)
 		if incErr != nil {
 			s.log.Error("failed to equal login: ",
@@ -42,8 +47,11 @@ func (s *AdminService) AuthAdmin(ctx context.Context, ip string, req *entity.Adm
 	}
 
 	if compareErr := bcrypt.CompareHashAndPassword([]byte(password), []byte(req.Password)); compareErr != nil {
+		s.log.Error("failed to compare pass: ", zap.Error(compareErr))
+
 		incErr := s.rep.IncCount(ctx, ip)
 		if incErr != nil {
+
 			s.log.Error("failed to compare pass and inc count: ",
 				zap.Error(errors.New(compareErr.Error()+"/"+incErr.Error())))
 
@@ -55,6 +63,7 @@ func (s *AdminService) AuthAdmin(ctx context.Context, ip string, req *entity.Adm
 
 	token, err := s.jwt.CreateToken(ctx, "", ip, "admin")
 	if err != nil {
+		s.log.Error("failed to create token: ", zap.Error(err))
 		return "", err
 	}
 

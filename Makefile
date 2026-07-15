@@ -4,7 +4,7 @@ export
 export PROJECT_ROOT=$(shell pwd)
 
 compose-up:
-	@docker compose up -d postgres-database redis
+	@docker compose up -d postgres-database redis app
 	@echo "Waiting for PostgreSQL to become ready..."
 	@docker compose exec postgres-database sh -c 'until pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB; do sleep 1; done'
 
@@ -12,15 +12,16 @@ compose-down:
 	@docker compose down
 
 clean-env:
-
 	@read -p "Clean all volumes files env? [Y/N]: " answ; \
 	if [ "$$answ" = "y" ] || [ "$$answ" = "Y" ]; then \
 		docker compose down --rmi local -v --remove-orphans && \
-		rm -rf out/pgdata && \
+		rm -rf out/pgdata out/works out/applogs out/logger.log && \
 		echo "Success"; \
 	else \
 		echo "Canceled"; \
 	fi
+
+
 
 migrate-create:
 	@if [ -z "$(seq)" ]; then \

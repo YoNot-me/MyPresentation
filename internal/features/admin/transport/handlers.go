@@ -90,7 +90,9 @@ func (a *AdminTransport) RenameBrand(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, "/admin/brands")
+	response(c, entity.Response{
+		Status: http.StatusOK,
+	})
 }
 
 func (a *AdminTransport) DeleteBrand(c *gin.Context) {
@@ -108,7 +110,9 @@ func (a *AdminTransport) DeleteBrand(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, "/admin/brands")
+	response(c, entity.Response{
+		Status: http.StatusOK,
+	})
 }
 
 func (a *AdminTransport) ChangeBrandPassword(c *gin.Context) {
@@ -192,9 +196,9 @@ func (a *AdminTransport) AddNewWork(c *gin.Context) {
 		return
 	}
 
-	brandName := filepath.Clean(c.Param("brandName"))
+	req.Brand = filepath.Clean(c.Param("brandName"))
 
-	count, err := a.srv.AddNewWork(ctx, brandName, &req, c)
+	count, err := a.srv.AddNewWork(ctx, &req, c)
 	if err != nil {
 		a.log.Error("Err add new work", zap.Error(err))
 		response(c, entity.Response{
@@ -228,9 +232,9 @@ func (a *AdminTransport) DeleteWork(c *gin.Context) {
 		return
 	}
 
-	const path = "/admin/%s/works"
-	query := fmt.Sprintf(path, brandName)
-	c.Redirect(http.StatusSeeOther, query)
+	response(c, entity.Response{
+		Status: http.StatusOK,
+	})
 }
 
 func (a *AdminTransport) ChangeWorkFields(c *gin.Context) {
@@ -250,9 +254,9 @@ func (a *AdminTransport) ChangeWorkFields(c *gin.Context) {
 		return
 	}
 
-	const path = "/admin/%s/works"
-	query := fmt.Sprintf(path, brandName)
-	c.Redirect(http.StatusSeeOther, query)
+	response(c, entity.Response{
+		Status: http.StatusOK,
+	})
 }
 
 func (a *AdminTransport) ListWorkImages(c *gin.Context) {
@@ -290,11 +294,14 @@ func (a *AdminTransport) ServingWork(c *gin.Context) {
 	workName := filepath.Clean(c.Param("workName"))
 	relPath := filepath.Clean(c.Param("filepath"))
 
-	err := validateSegment(brandName, workName, relPath)
-	if err != nil {
-		a.log.Error("Err validate segment", zap.Error(err))
+	root, _ := filepath.Abs("./works")
+	full := filepath.Join(root, brandName, workName, relPath)
+
+	full, _ = filepath.Abs(full)
+	if !strings.HasPrefix(full, root+string(os.PathSeparator)) {
+		a.log.Error("Err path traversal", zap.Error(entity.ErrPathTraversal))
 		response(c, entity.Response{
-			Err: err,
+			Err: entity.ErrPathTraversal,
 		})
 		return
 	}
@@ -312,17 +319,4 @@ func (a *AdminTransport) ServingWork(c *gin.Context) {
 	}
 
 	c.File(fullPath)
-}
-
-func validateSegment(brandName, workName, relPath string) error {
-
-	root, _ := filepath.Abs("./works")
-	full := filepath.Join(root, brandName, workName, relPath)
-
-	full, _ = filepath.Abs(full)
-	if !strings.HasPrefix(full, root+string(os.PathSeparator)) {
-		return entity.ErrPathTraversal
-	}
-
-	return nil
 }

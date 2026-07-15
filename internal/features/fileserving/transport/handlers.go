@@ -60,11 +60,14 @@ func (t *FileServingTransport) GetWork(c *gin.Context) {
 		return
 	}
 
-	err = validateSegment(brandName, workName, relPath)
-	if err != nil {
-		t.log.Error("Err validate segment", zap.Error(err))
+	root, _ := filepath.Abs("./works")
+	full := filepath.Join(root, brandName, workName, relPath)
+
+	full, _ = filepath.Abs(full)
+	if !strings.HasPrefix(full, root+string(os.PathSeparator)) {
+		t.log.Error("Err path traversal", zap.Error(entity.ErrPathTraversal))
 		response(c, entity.Response{
-			Err: err,
+			Err: entity.ErrPathTraversal,
 		})
 		return
 	}
@@ -109,17 +112,4 @@ func (t *FileServingTransport) ListWorkImages(c *gin.Context) {
 		Status: http.StatusOK,
 		Data:   files,
 	})
-}
-
-func validateSegment(brandName, workName, relPath string) error {
-
-	root, _ := filepath.Abs("./works")
-	full := filepath.Join(root, brandName, workName, relPath)
-
-	full, _ = filepath.Abs(full)
-	if !strings.HasPrefix(full, root+string(os.PathSeparator)) {
-		return entity.ErrPathTraversal
-	}
-
-	return nil
 }
