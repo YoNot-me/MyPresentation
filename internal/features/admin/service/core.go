@@ -30,6 +30,8 @@ type AdminService struct {
 	log *zap.Logger
 	rep AdminRepository
 	jwt *JWT.ServingJWT
+
+	serviceHelper
 }
 
 func NewAdminService(log *zap.Logger, rep AdminRepository, jwt *JWT.ServingJWT) *AdminService {
@@ -40,3 +42,5 @@ func NewAdminService(log *zap.Logger, rep AdminRepository, jwt *JWT.ServingJWT) 
 		jwt: jwt,
 	}
 }
+
+type serviceHelper struct{}

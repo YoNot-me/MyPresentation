@@ -77,7 +77,6 @@ body {
 
 .stream {
   display: grid;
-  gap: 20px;
   scroll-snap-type: y proximity;
 }
 
@@ -160,10 +159,6 @@ body {
 
   .back {
     align-self: flex-start;
-  }
-
-  .stream {
-    gap: 28px;
   }
 
   .frame {

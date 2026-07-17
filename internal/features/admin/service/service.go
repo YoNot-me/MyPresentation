@@ -31,13 +31,9 @@ func (s *AdminService) ListAllBrands(ctx context.Context) ([]entity.BrandsRespon
 
 func (s *AdminService) AddNewBrand(ctx context.Context, brand *entity.Brand) error {
 
-	if brand.Name == "" {
-		s.log.Error("brand name is empty")
-		return entity.BadRequest
-	}
-	if brand.Password == "" {
-		s.log.Error("brand password is empty")
-		return entity.BadRequest
+	if validateErr := s.validateNotNil([]string{brand.Name, brand.Password}); validateErr != nil {
+		s.log.Error("not valid request", zap.Error(validateErr))
+		return validateErr
 	}
 
 	brand.Name = filepath.Clean(brand.Name)
@@ -66,13 +62,9 @@ func (s *AdminService) AddNewBrand(ctx context.Context, brand *entity.Brand) err
 
 func (s *AdminService) RenameBrand(ctx context.Context, brandName string, newInfo *entity.Brand) error {
 
-	if brandName == "" {
-		s.log.Error("brand name is empty")
-		return entity.BadRequest
-	}
-	if newInfo.Name == "" {
-		s.log.Error("brand name is empty")
-		return entity.BadRequest
+	if validateErr := s.validateNotNil([]string{brandName, newInfo.Name}); validateErr != nil {
+		s.log.Error("not valid request", zap.Error(validateErr))
+		return validateErr
 	}
 
 	err := os.Rename(
@@ -99,9 +91,9 @@ func (s *AdminService) RenameBrand(ctx context.Context, brandName string, newInf
 
 func (s *AdminService) DeleteBrand(ctx context.Context, brandName string) error {
 
-	if brandName == "" {
-		s.log.Error("brand name is empty")
-		return entity.BadRequest
+	if validateErr := s.validateNotNil([]string{brandName}); validateErr != nil {
+		s.log.Error("not valid request", zap.Error(validateErr))
+		return validateErr
 	}
 
 	err := s.rep.DeleteBrand(ctx, brandName)
@@ -122,18 +114,14 @@ func (s *AdminService) DeleteBrand(ctx context.Context, brandName string) error 
 
 func (s *AdminService) ChangeBrandPassword(ctx context.Context, brand *entity.Brand) error {
 
-	if brand.Name == "" {
-		s.log.Error("brand name is empty")
-		return entity.BadRequest
-	}
-	if brand.Password == "" {
-		s.log.Error("brand password is empty")
-		return entity.BadRequest
+	if validateErr := s.validateNotNil([]string{brand.Name, brand.Password}); validateErr != nil {
+		s.log.Error("not valid request", zap.Error(validateErr))
+		return validateErr
 	}
 
 	hashPass, err := bcrypt.GenerateFromPassword([]byte(brand.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		return entity.InvalidPass
 	}
 
 	err = s.rep.ChangeBrandPassword(ctx, brand.Name, string(hashPass))
@@ -147,10 +135,11 @@ func (s *AdminService) ChangeBrandPassword(ctx context.Context, brand *entity.Br
 
 func (s *AdminService) ListAllWorks(ctx context.Context, brandName string) ([]entity.WorksResponse, error) {
 
-	if brandName == "" {
-		s.log.Error("brand name is empty")
-		return nil, entity.BadRequest
+	if validateErr := s.validateNotNil([]string{brandName}); validateErr != nil {
+		s.log.Error("not valid request", zap.Error(validateErr))
+		return nil, validateErr
 	}
+
 	work, err := s.rep.ListAllWorks(ctx, brandName)
 	if err != nil {
 		s.log.Error("failed to list all works", zap.Error(err))
@@ -162,8 +151,16 @@ func (s *AdminService) ListAllWorks(ctx context.Context, brandName string) ([]en
 
 func (s *AdminService) AddNewWork(ctx context.Context, req *entity.Works, c *gin.Context) (int, error) {
 
-	if req.Brand == "" || req.WorkName == "" {
-		return 0, entity.BadRequest
+	if validateErr := s.validateNotNil([]string{req.Brand, req.WorkName}); validateErr != nil {
+		s.log.Error("not valid request", zap.Error(validateErr))
+		return 0, validateErr
+	}
+
+	if req.Status != "" {
+		if statusErr := s.validateStatus(req.Status); statusErr != nil {
+			s.log.Error("not valid status", zap.Error(statusErr))
+			return 0, statusErr
+		}
 	}
 
 	ok, err := s.rep.IsWorkExist(ctx, req.Brand, req.WorkName)
@@ -254,8 +251,9 @@ func (s *AdminService) AddNewWork(ctx context.Context, req *entity.Works, c *gin
 
 func (s *AdminService) GetWorkImages(brandName, workName string) ([]string, error) {
 
-	if brandName == "" || workName == "" {
-		return nil, entity.BadRequest
+	if validateErr := s.validateNotNil([]string{brandName, workName}); validateErr != nil {
+		s.log.Error("not valid request", zap.Error(validateErr))
+		return nil, validateErr
 	}
 
 	dir := filepath.Join(dst, filepath.Clean(brandName), filepath.Clean(workName))
@@ -291,13 +289,9 @@ func isAllowedImageExt(ext string) bool {
 
 func (s *AdminService) DeleteWork(ctx context.Context, brandName, workName string) error {
 
-	if brandName == "" {
-		s.log.Error("brand name is empty")
-		return entity.BadRequest
-	}
-	if workName == "" {
-		s.log.Error("work name is empty")
-		return entity.BadRequest
+	if validateErr := s.validateNotNil([]string{brandName, workName}); validateErr != nil {
+		s.log.Error("not valid request", zap.Error(validateErr))
+		return validateErr
 	}
 
 	err := s.rep.DeleteWork(ctx, brandName, workName)
@@ -319,13 +313,9 @@ func (s *AdminService) DeleteWork(ctx context.Context, brandName, workName strin
 func (s *AdminService) ChangeWorkFields(ctx context.Context, brandName, workName string,
 	c *gin.Context) error {
 
-	if workName == "" {
-		s.log.Error("work name is empty")
-		return entity.BadRequest
-	}
-	if brandName == "" {
-		s.log.Error("brand name is empty")
-		return entity.BadRequest
+	if validateErr := s.validateNotNil([]string{brandName, workName}); validateErr != nil {
+		s.log.Error("not valid request", zap.Error(validateErr))
+		return validateErr
 	}
 
 	form, err := c.MultipartForm()
@@ -343,12 +333,19 @@ func (s *AdminService) ChangeWorkFields(ctx context.Context, brandName, workName
 		}
 	}
 
+	if newInfo.Status != "" {
+		if statusErr := s.validateStatus(newInfo.Status); statusErr != nil {
+			s.log.Error("not valid status", zap.Error(err))
+			return statusErr
+		}
+	}
+
 	renamed := newInfo.WorkName != "" && newInfo.WorkName != workName
 	if renamed {
 
 		s.log.Info("renaming work folder :349")
 
-		if err = s.RenameFolders(brandName, workName, newInfo.WorkName); err != nil {
+		if err = s.renameFolders(brandName, workName, newInfo.WorkName); err != nil {
 			s.log.Error("failed to rename work folder", zap.Error(err))
 			return err
 		}
@@ -367,7 +364,7 @@ func (s *AdminService) ChangeWorkFields(ctx context.Context, brandName, workName
 			s.log.Error("failed to change work fields", zap.Error(err))
 
 			if renamed {
-				if rbErr := s.RenameFolders(brandName, newInfo.WorkName, workName); rbErr != nil {
+				if rbErr := s.renameFolders(brandName, newInfo.WorkName, workName); rbErr != nil {
 					s.log.Error("failed to rollback folder rename after db error",
 						zap.Error(rbErr))
 					return fmt.Errorf("change failed: %w; rollback also failed: %v", err, rbErr)
@@ -413,24 +410,6 @@ func (s *AdminService) ChangeWorkFields(ctx context.Context, brandName, workName
 			}
 
 			return nil
-		}
-	}
-
-	return nil
-}
-
-func (s *AdminService) RenameFolders(brandName, workName string, newWorkName string) error {
-
-	if newWorkName != "" {
-		s.log.Info("renaming work folder :418")
-
-		err := os.Rename(
-			fmt.Sprintf("%s/%s/%s", dst, brandName, workName),
-			fmt.Sprintf("%s/%s/%s", dst, brandName, newWorkName),
-		)
-		if err != nil {
-			s.log.Error("failed to rename work folder", zap.Error(err))
-			return err
 		}
 	}
 

@@ -117,7 +117,7 @@ func (ar *AdminRepo) DeleteBrand(ctx context.Context, brandName string) error {
 func (ar *AdminRepo) ListAllWorks(ctx context.Context, brandName string) ([]entity.WorksResponse, error) {
 
 	const query = `
-		SELECT workName, url, description FROM presentation.works WHERE brand = $1
+		SELECT workName, url, description, status FROM presentation.works WHERE brand = $1
 	`
 
 	res, err := ar.db.Query(ctx, query, brandName)
@@ -130,7 +130,7 @@ func (ar *AdminRepo) ListAllWorks(ctx context.Context, brandName string) ([]enti
 
 	for res.Next() {
 		work := entity.WorksResponse{}
-		if err = res.Scan(&work.WorkName, &work.Url, &work.Description); err != nil {
+		if err = res.Scan(&work.WorkName, &work.Url, &work.Description, &work.Status); err != nil {
 			return []entity.WorksResponse{}, err
 		}
 
@@ -147,8 +147,8 @@ func (ar *AdminRepo) ListAllWorks(ctx context.Context, brandName string) ([]enti
 func (ar *AdminRepo) AddNewWork(ctx context.Context, req *entity.Works) error {
 
 	const query = `
-		INSERT INTO presentation.works (brand, workName, url, description)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO presentation.works (brand, workName, url, description, status)
+		VALUES ($1, $2, $3, $4, $5)
 	`
 
 	res, err := ar.db.Exec(ctx, query,
@@ -156,6 +156,7 @@ func (ar *AdminRepo) AddNewWork(ctx context.Context, req *entity.Works) error {
 		req.WorkName,
 		req.Url,
 		req.Description,
+		req.Status,
 	)
 	if err != nil {
 		if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == "23505" {
@@ -199,13 +200,15 @@ func (ar *AdminRepo) ChangeWorkFields(
 		SET
 			workName    = CASE WHEN $3 <> '' THEN $3 ELSE workName END,
 			url         = CASE WHEN $4 <> '' THEN $4 ELSE url END,
-			description = CASE WHEN $5 <> '' THEN $5 ELSE description END
+			description = CASE WHEN $5 <> '' THEN $5 ELSE description END,
+			status      = CASE WHEN $6 <> '' THEN $6 ELSE status END
 		WHERE brand = $1
 		  AND workName = $2
 		  AND (
 		      (workName    		IS DISTINCT FROM CASE WHEN $3 <> '' THEN $3 ELSE workName END)
 		      OR (url         	IS DISTINCT FROM CASE WHEN $4 <> '' THEN $4 ELSE url END)
 		      OR (description 	IS DISTINCT FROM CASE WHEN $5 <> '' THEN $5 ELSE description END)
+		      OR (status      	IS DISTINCT FROM CASE WHEN $6 <> '' THEN $6 ELSE status END)
 		  )
 	`
 
@@ -215,6 +218,7 @@ func (ar *AdminRepo) ChangeWorkFields(
 		work.WorkName,
 		work.Url,
 		work.Description,
+		work.Status,
 	)
 	if err != nil {
 		if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == "23505" {
@@ -233,7 +237,7 @@ func (ar *AdminRepo) ChangeWorkFields(
 func (ar *AdminRepo) GetWork(ctx context.Context, brandName, workName string) (entity.Works, error) {
 
 	const query = `
-		SELECT brand, workName, url, description FROM presentation.works WHERE brand = $1 AND workName = $2
+		SELECT brand, workName, url, description, status FROM presentation.works WHERE brand = $1 AND workName = $2
 	`
 
 	var work entity.Works
@@ -243,6 +247,7 @@ func (ar *AdminRepo) GetWork(ctx context.Context, brandName, workName string) (e
 		&work.WorkName,
 		&work.Url,
 		&work.Description,
+		&work.Status,
 	); err != nil {
 		return entity.Works{},
 			err
