@@ -25,6 +25,9 @@
   <button class="btn-outline" id="renameBrandBtn">
     Редактировать название бренда
   </button>
+  <button class="btn-outline" id="changePasswordBtn" type="button">
+    Сменить пароль
+  </button>
 </div>
 
 <main class="grid" id="grid"></main>
@@ -83,6 +86,39 @@
       </button>
       <button class="btn-pill" id="addWorkSubmit" type="button">
         Добавить
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- модалка смены пароля бренда -->
+<div class="modal-overlay" id="changePasswordOverlay" hidden>
+  <div class="modal">
+    <h2 class="modal-title">Сменить пароль</h2>
+    <p class="modal-sub" id="changePasswordBrandLabel"></p>
+    <div class="modal-fields">
+      <input
+              class="field"
+              id="newPassword"
+              type="password"
+              placeholder="Новый пароль"
+              autocomplete="new-password"
+      />
+      <input
+              class="field"
+              id="newPasswordRepeat"
+              type="password"
+              placeholder="Повторите пароль"
+              autocomplete="new-password"
+      />
+    </div>
+    <p class="modal-error" id="changePasswordError"></p>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="changePasswordCancel" type="button">
+        Отмена
+      </button>
+      <button class="btn-pill" id="changePasswordSubmit" type="button">
+        Сохранить
       </button>
     </div>
   </div>

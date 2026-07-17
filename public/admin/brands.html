@@ -113,6 +113,28 @@
   </div>
 </div>
 
+<!-- баннер-предупреждение для подтверждения удаления бренда -->
+<div class="modal-overlay" id="confirmDeleteOverlay" hidden>
+  <div class="modal">
+    <div class="warn-banner">
+      <span class="warn-icon" aria-hidden="true">!</span>
+      <span>Это действие необратимо. Все работы и файлы бренда будут
+        удалены безвозвратно.</span>
+    </div>
+    <h2 class="modal-title">Удалить бренд?</h2>
+    <p class="modal-sub" id="confirmDeleteLabel"></p>
+    <p class="modal-error" id="confirmDeleteError"></p>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="confirmDeleteCancel" type="button">
+        Отмена
+      </button>
+      <button class="btn-danger" id="confirmDeleteSubmit" type="button">
+        Удалить бренд
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="/admin/panel/app.js" data-page="brands"></script>
 </body>
 </html>

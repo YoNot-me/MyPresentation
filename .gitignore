@@ -1,4 +1,5 @@
 .env
+.env_work
 out
 .gocache
 logger.log
@@ -6,3 +7,5 @@ works
 .idea
 .DS_Store
 Caddyfile
+docker-compose.yaml
+Dockerfile

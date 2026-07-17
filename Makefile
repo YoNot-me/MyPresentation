@@ -4,14 +4,14 @@ export
 export PROJECT_ROOT=$(shell pwd)
 
 compose-up:
-	@docker compose up -d postgres-database redis app
+	@docker compose up -d postgres-database redis caddy
 	@echo "Waiting for PostgreSQL to become ready..."
 	@docker compose exec postgres-database sh -c 'until pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB; do sleep 1; done'
 
 compose-down:
 	@docker compose down
 
-clean-env:
+clean:
 	@read -p "Clean all volumes files env? [Y/N]: " answ; \
 	if [ "$$answ" = "y" ] || [ "$$answ" = "Y" ]; then \
 		docker compose down --rmi local -v --remove-orphans && \
@@ -20,8 +20,6 @@ clean-env:
 	else \
 		echo "Canceled"; \
 	fi
-
-
 
 migrate-create:
 	@if [ -z "$(seq)" ]; then \
@@ -50,17 +48,11 @@ migrate-action:
     		-database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@presentation-postgres:5432/${POSTGRES_DB}?sslmode=disable \
     		"$(action)"
 
-run:
+docker-up:
 	@$(MAKE) compose-up
 	@$(MAKE) migrate-up
-	@echo "server started localhost:8080"
-
-clean:
-	@$(MAKE) compose-clean-env
-
-logs-db:
-	docker logs presentation-postgres
-
-run-local:
-	@$(MAKE) run
+	@echo "docker active"
+run:
+	@$(MAKE) docker-up
 	@go run ./cmd
+	@echo "server start"

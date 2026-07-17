@@ -132,6 +132,36 @@ body {
   background: #fafafa;
 }
 
+/* row of quick actions ("+" / delete) under a brand bubble */
+.brand-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-del-brand {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-del-brand:hover {
+  background: #d43a3a;
+  border-color: #d43a3a;
+  color: #fff;
+}
+
 /* ---- modal (add brand / add work) ---- */
 .modal-overlay {
   position: fixed;
@@ -271,6 +301,56 @@ body {
   cursor: default;
 }
 
+/* ---- warning banner + danger button (destructive confirmation) ---- */
+.warn-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  background: #fdecec;
+  border: 1px solid rgba(212, 58, 58, 0.2);
+  color: #a5342f;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.warn-icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #d43a3a;
+  color: #fff;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-danger {
+  min-width: 140px;
+  height: 48px;
+  border: 1px solid #d43a3a;
+  background: #d43a3a;
+  color: #fff;
+  border-radius: var(--pill);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.btn-danger:hover {
+  opacity: 0.85;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* ---- works management header ---- */
 .works-head {
   display: flex;
@@ -378,6 +458,70 @@ body {
   flex: 1;
   white-space: pre-line;
   word-break: break-word;
+}
+
+/* ---- status slider (segmented control on each work card) ---- */
+.status-slider {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 4px 16px;
+  padding: 4px;
+  background: #ffffff;
+  border: 10px;
+  border-radius: 20px;
+}
+
+.status-opt {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  padding: 9px 8px;
+  border-radius: var(--pill);
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.status-opt:hover {
+  color: var(--text);
+}
+
+.status-opt.is-active {
+  font-weight: 500;
+  box-shadow: var(--shadow);
+  background: var(--card);
+  color: var(--text);
+}
+
+.status-opt.is-active.status-progress {
+  background: #eef1f7;
+  color: #3f5273;
+}
+
+.status-opt.is-active.status-done {
+  background: #e8f6ee;
+  color: #2f7d4f;
+}
+
+.status-opt.is-active.status-review {
+  background: #fff4e2;
+  color: #b5741a;
+}
+
+.status-opt.is-active.status-revision {
+  background: #fdecec;
+  color: #c0392b;
+}
+
+.status-opt:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 .card-actions {

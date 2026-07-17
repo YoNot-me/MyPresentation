@@ -113,6 +113,48 @@ body {
   word-break: break-word;
 }
 
+/* ---- read-only status badge (shown to the brand) ---- */
+.work-status {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 4px 16px;
+  padding: 6px 14px;
+  border-radius: var(--pill);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.work-status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-progress {
+  background: #eef1f7;
+  color: #3f5273;
+}
+
+.status-done {
+  background: #e8f6ee;
+  color: #2f7d4f;
+}
+
+.status-review {
+  background: #fff4e2;
+  color: #b5741a;
+}
+
+.status-revision {
+  background: #fdecec;
+  color: #c0392b;
+}
+
 .btn-block {
   display: block;
   text-align: center;

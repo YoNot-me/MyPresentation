@@ -5,6 +5,28 @@
   const page = document.currentScript.dataset.page;
   const stateMsg = document.getElementById("stateMsg");
 
+  // The four work statuses, in display order. Values match the DB column
+  // exactly — they are sent back verbatim to PUT .../change as {status}.
+  const STATUS_OPTIONS = ["в работе", "сдан", "на согласовании", "правка"];
+
+  function statusClass(status) {
+    switch ((status || "").trim().toLowerCase()) {
+      case "сдан":
+        return "status-done";
+      case "на согласовании":
+        return "status-review";
+      case "правка":
+        return "status-revision";
+      default:
+        return "status-progress";
+    }
+  }
+
+  function statusLabel(status) {
+    const s = (status || "").trim() || "в работе";
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
   function setState(msg) {
     if (!stateMsg) return;
     stateMsg.textContent = msg || "";
@@ -224,6 +246,55 @@
     // ---- "Добавить работу" modal (opened via "+" on a brand bubble) ----
     const openAddWork = setupAddWorkModal();
 
+    // ---- "Удалить бренд" confirmation banner ----
+    // DELETE /admin/:brandName removes the brand together with all its works
+    // and files, so we gate it behind an explicit warning-banner confirmation.
+    const confirmDeleteOverlay = document.getElementById("confirmDeleteOverlay");
+    const confirmDeleteLabel = document.getElementById("confirmDeleteLabel");
+    const confirmDeleteError = document.getElementById("confirmDeleteError");
+    const confirmDeleteSubmit = document.getElementById("confirmDeleteSubmit");
+    const confirmDeleteCancel = document.getElementById("confirmDeleteCancel");
+    let brandToDelete = null;
+
+    function openConfirmDelete(name) {
+      brandToDelete = name;
+      confirmDeleteLabel.textContent = 'Бренд «' + name + '»';
+      confirmDeleteError.textContent = "";
+      confirmDeleteOverlay.hidden = false;
+    }
+    function closeConfirmDelete() {
+      confirmDeleteOverlay.hidden = true;
+      brandToDelete = null;
+    }
+
+    confirmDeleteCancel.addEventListener("click", closeConfirmDelete);
+    confirmDeleteOverlay.addEventListener("click", (e) => {
+      if (e.target === confirmDeleteOverlay) closeConfirmDelete();
+    });
+
+    confirmDeleteSubmit.addEventListener("click", async () => {
+      if (!brandToDelete) return;
+      confirmDeleteSubmit.disabled = true;
+      try {
+        const res = await guardedFetch(
+            "/admin/" + encodeURIComponent(brandToDelete),
+            { method: "DELETE" }
+        );
+        if (!res.ok && !res.redirected) {
+          confirmDeleteError.textContent = "Не удалось удалить бренд";
+          return;
+        }
+        closeConfirmDelete();
+        loadBrands();
+      } catch (e) {
+        if (e.message !== "unauthorized") {
+          confirmDeleteError.textContent = "Ошибка соединения";
+        }
+      } finally {
+        confirmDeleteSubmit.disabled = false;
+      }
+    });
+
     // ---- brands list ----
     async function loadBrands() {
       try {
@@ -253,7 +324,19 @@
           plus.title = "Добавить работу";
           plus.addEventListener("click", () => openAddWork(b.name));
 
-          wrap.append(a, plus);
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className = "brand-del-brand";
+          del.textContent = "×";
+          del.title = "Удалить бренд";
+          del.setAttribute("aria-label", "Удалить бренд");
+          del.addEventListener("click", () => openConfirmDelete(b.name));
+
+          const actions = document.createElement("div");
+          actions.className = "brand-actions";
+          actions.append(plus, del);
+
+          wrap.append(a, actions);
           gridEl.appendChild(wrap);
         }
       } catch (e) {
@@ -329,6 +412,7 @@
     const renameBtn = document.getElementById("renameBrandBtn");
     const addWorkBtn = document.getElementById("addWorkBtn");
     const coverInput = document.getElementById("coverInput");
+    const changePasswordBtn = document.getElementById("changePasswordBtn");
 
     if (!brand) {
       setState("Не указан бренд");
@@ -356,6 +440,70 @@
             "/admin/panel/works.html?brand=" + encodeURIComponent(name.trim());
       } else {
         alert("Не удалось переименовать бренд");
+      }
+    });
+
+    // ---- "Сменить пароль" modal ----
+    // PUT /admin/:brandName/password — the server reads {password} from the
+    // JSON body (the brand name comes from the URL), hashes it and stores it.
+    const changePasswordOverlay = document.getElementById("changePasswordOverlay");
+    const changePasswordBrandLabel = document.getElementById("changePasswordBrandLabel");
+    const newPassword = document.getElementById("newPassword");
+    const newPasswordRepeat = document.getElementById("newPasswordRepeat");
+    const changePasswordError = document.getElementById("changePasswordError");
+    const changePasswordSubmit = document.getElementById("changePasswordSubmit");
+    const changePasswordCancel = document.getElementById("changePasswordCancel");
+
+    function openChangePassword() {
+      newPassword.value = "";
+      newPasswordRepeat.value = "";
+      changePasswordError.textContent = "";
+      changePasswordBrandLabel.textContent = brand;
+      changePasswordOverlay.hidden = false;
+      newPassword.focus();
+    }
+    function closeChangePassword() {
+      changePasswordOverlay.hidden = true;
+    }
+
+    changePasswordBtn.addEventListener("click", openChangePassword);
+    changePasswordCancel.addEventListener("click", closeChangePassword);
+    changePasswordOverlay.addEventListener("click", (e) => {
+      if (e.target === changePasswordOverlay) closeChangePassword();
+    });
+
+    changePasswordSubmit.addEventListener("click", async () => {
+      const password = newPassword.value;
+      if (!password) {
+        changePasswordError.textContent = "Введите новый пароль";
+        return;
+      }
+      if (password !== newPasswordRepeat.value) {
+        changePasswordError.textContent = "Пароли не совпадают";
+        return;
+      }
+
+      changePasswordSubmit.disabled = true;
+      try {
+        const res = await guardedFetch(
+            "/admin/" + encodeURIComponent(brand) + "/password",
+            {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ password: password }),
+            }
+        );
+        if (!res.ok && !res.redirected) {
+          changePasswordError.textContent = "Не удалось сменить пароль";
+          return;
+        }
+        closeChangePassword();
+      } catch (e) {
+        if (e.message !== "unauthorized") {
+          changePasswordError.textContent = "Ошибка соединения";
+        }
+      } finally {
+        changePasswordSubmit.disabled = false;
       }
     });
 
@@ -439,6 +587,8 @@
         desc.className = "work-desc";
         desc.textContent = work.description || "";
 
+        const statusSlider = makeStatusSlider(work);
+
         const actions = document.createElement("div");
         actions.className = "card-actions";
 
@@ -470,9 +620,57 @@
             })
         );
 
-        card.append(del, thumb, title, desc, actions);
+        card.append(del, thumb, title, statusSlider, desc, actions);
         gridEl.appendChild(card);
       }
+    }
+
+    // Segmented control for a work's status. Clicking a segment PUTs the new
+    // status via changeWork; on success we just re-highlight the active segment
+    // (no full reload, so the scroll position and other cards stay put).
+    function makeStatusSlider(work) {
+      const name = work.work_name;
+      const slider = document.createElement("div");
+      slider.className = "status-slider";
+
+      const buttons = STATUS_OPTIONS.map((status) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "status-opt";
+        btn.textContent = statusLabel(status);
+        btn.dataset.status = status;
+        slider.appendChild(btn);
+        return btn;
+      });
+
+      function highlight(current) {
+        const cls = statusClass(current);
+        for (const btn of buttons) {
+          const active = btn.dataset.status === current;
+          btn.classList.toggle("is-active", active);
+          btn.classList.toggle(cls, active);
+        }
+      }
+      highlight((work.status || "").trim() || "в работе");
+
+      slider.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".status-opt");
+        if (!btn || btn.classList.contains("is-active")) return;
+        const next = btn.dataset.status;
+
+        buttons.forEach((b) => (b.disabled = true));
+        try {
+          if (await changeWork(brand, name, { status: next })) {
+            work.status = next;
+            buttons.forEach((b) => b.className = "status-opt");
+            highlight(next);
+          }
+        } finally {
+          buttons.forEach((b) => (b.disabled = false));
+        }
+      });
+
+      return slider;
     }
 
     function makeAction(label, handler) {

@@ -24,6 +24,7 @@ type Works struct {
 	WorkName    string `json:"work_name" db:"workName"`
 	Url         string `json:"url" db:"url"`
 	Description string `json:"description" db:"description"`
+	Status      string `json:"status" db:"status"`
 }
 
 type Response struct {
@@ -40,4 +41,5 @@ type WorksResponse struct {
 	WorkName    string `json:"work_name" db:"workName"`
 	Url         string `json:"url" db:"url"`
 	Description string `json:"description" db:"description"`
+	Status      string `json:"status" db:"status"`
 }

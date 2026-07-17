@@ -42,7 +42,6 @@ type AdminService interface {
 	ListAllWorks(ctx context.Context, brandName string) ([]entity.WorksResponse, error)
 	DeleteWork(ctx context.Context, brandName, workName string) error
 	ChangeWorkFields(ctx context.Context, brandName, workName string, c *gin.Context) error
-	RenameFolders(brandName, workName string, newWorkName string) error
 	GetWorkImages(brandName, workName string) ([]string, error)
 }
 

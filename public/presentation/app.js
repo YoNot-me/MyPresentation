@@ -33,6 +33,26 @@
     );
   }
 
+  // Maps a stored status string to its badge CSS class. Rows always carry a
+  // status (the DB column defaults to "в работе"), but fall back just in case.
+  function statusClass(status) {
+    switch ((status || "").trim().toLowerCase()) {
+      case "сдан":
+        return "status-done";
+      case "на согласовании":
+        return "status-review";
+      case "правка":
+        return "status-revision";
+      default:
+        return "status-progress";
+    }
+  }
+
+  function statusLabel(status) {
+    const s = (status || "").trim() || "в работе";
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
   function showMessage(msg) {
     grid.hidden = true;
     emptyState.hidden = false;
@@ -74,6 +94,10 @@
       name.className = "work-name";
       name.textContent = work.work_name || "";
 
+      const status = document.createElement("span");
+      status.className = "work-status " + statusClass(work.status);
+      status.textContent = statusLabel(work.status);
+
       const desc = document.createElement("p");
       desc.className = "work-desc";
       desc.textContent = work.description || "";
@@ -90,7 +114,7 @@
         link.href = "#";
       }
 
-      card.append(thumb, name, desc, link);
+      card.append(thumb, name, status, desc, link);
       grid.appendChild(card);
     }
   }
