@@ -7,5 +7,3 @@ works
 .idea
 .DS_Store
 Caddyfile
-docker-compose.yaml
-Dockerfile
