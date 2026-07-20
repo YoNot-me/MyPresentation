@@ -89,7 +89,7 @@ func (t *AuthTransport) Logout(c *gin.Context) {
 	}
 
 	claims := token.Claims.(*JWT.JWT)
-	err = t.jwt.LogOut(c.Request.Context(), claims.ID)
+	err = t.jwt.LogOut(c.Request.Context(), claims.RegisteredClaims.ID)
 	if err != nil {
 		t.log.Error("failed to logout", zap.Error(err))
 

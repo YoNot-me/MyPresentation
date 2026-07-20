@@ -17,11 +17,15 @@ func (j *ServingJWT) ValidateToken(token string) (*jwt.Token, bool) {
 
 	parsed, err := j.ParseToken(token)
 	if err != nil {
-		j.log.Error("failed to parse token", zap.Error(err))
+		j.log.Error("jwt.go :20 >> failed to parse token", zap.Error(err))
+		return nil, false
+	}
+	if !parsed.Valid {
 		return nil, false
 	}
 
-	if !parsed.Valid {
+	claims := parsed.Claims.(*JWT)
+	if ok := j.IsExist(context.Background(), claims.RegisteredClaims.ID); !ok {
 		return nil, false
 	}
 
@@ -64,12 +68,12 @@ func (j *ServingJWT) CreateToken(ctx context.Context, brandName, ip, role string
 
 	newToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, customClaims).SignedString([]byte(j.env.JWTKey))
 	if err != nil {
-		j.log.Error("failed to create token: "+ip+" "+brandName, zap.Error(err))
+		j.log.Error("jwt.go :72 >> failed to create token: "+ip+" "+brandName, zap.Error(err))
 		return "", err
 	}
 
-	if err = j.rdb.Set(ctx, "sess:"+jti, newToken, 12*time.Hour).Err(); err != nil {
-		j.log.Error("failed to store token: "+ip+" "+brandName, zap.Error(err))
+	if err = j.rdb.Set(ctx, jti, newToken, 12*time.Hour).Err(); err != nil {
+		j.log.Error("jwt.go :77 >> failed to store token: "+ip+" "+brandName, zap.Error(err))
 		return "", err
 	}
 
@@ -81,25 +85,30 @@ func (j *ServingJWT) CheckAdminAccess(token *jwt.Token, role string) bool {
 	claims := token.Claims.(*JWT)
 
 	if claims.Role != role {
-		j.log.Error("invalid token: " + claims.ID)
+		j.log.Error("jwt.go :89 >> invalid token: " + claims.ID)
+		return false
+	}
+
+	if ok := j.IsExist(context.Background(), claims.RegisteredClaims.ID); !ok {
+		j.log.Error("jwt.go :95 >> token not found: " + claims.RegisteredClaims.ID)
 		return false
 	}
 
 	return true
 }
 
-func (j *ServingJWT) LogOut(ctx context.Context, id string) error {
+func (j *ServingJWT) LogOut(ctx context.Context, jti string) error {
 
-	if err := j.rdb.Del(ctx, "sess:"+id).Err(); err != nil {
+	if err := j.rdb.Del(ctx, jti).Err(); err != nil {
 		if errors.Is(err, redis.Nil) {
-			j.log.Error("token not found: " + id)
+			j.log.Error("jwt.go :105 >> token not found: " + jti)
 			return entity.NotFound
 		}
 
-		j.log.Error("retry to delete token: " + id)
-		retryErr := j.RetryDeleteToken(ctx, id)
+		j.log.Error("jwt.go :109 >> retry to delete token: " + jti)
+		retryErr := j.RetryDeleteToken(ctx, jti)
 		if retryErr != nil {
-			j.log.Error("failed to enqueue retry: "+id, zap.Error(retryErr))
+			j.log.Error("jwt.go :112 >> failed to enqueue retry: "+jti, zap.Error(retryErr))
 		}
 		if retryErr == nil {
 			return nil
@@ -111,15 +120,15 @@ func (j *ServingJWT) LogOut(ctx context.Context, id string) error {
 	return nil
 }
 
-func (j *ServingJWT) RetryDeleteToken(ctx context.Context, id string) error {
+func (j *ServingJWT) RetryDeleteToken(ctx context.Context, jti string) error {
 
 	var lastErr error
 
 	for i := 0; i < 3; i++ {
 
-		err := j.rdb.Del(ctx, "sess:"+id).Err()
+		err := j.rdb.Del(ctx, jti).Err()
 		if err == nil {
-			j.log.Info("token deleted: " + id)
+			j.log.Info("jwt.go :132 >> token deleted: " + jti)
 			return nil
 		}
 		if errors.Is(err, redis.Nil) {
@@ -130,7 +139,7 @@ func (j *ServingJWT) RetryDeleteToken(ctx context.Context, id string) error {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	return fmt.Errorf("logout failed after retries: %v", lastErr)
+	return fmt.Errorf("jwt.go :143 >> logout failed after retries: %v", lastErr)
 }
 
 func (j *ServingJWT) IsExist(ctx context.Context, jti string) bool {
